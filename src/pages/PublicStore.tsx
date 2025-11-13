@@ -9,6 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Minus, ShoppingCart, Store, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+
+const customerSchema = z.object({
+  name: z.string().trim().min(2, "Nome deve ter no mínimo 2 caracteres").max(100, "Nome muito longo"),
+  phone: z.string().trim().regex(/^(\+55\d{10,11}|\(\d{2}\)\s?\d{4,5}-?\d{4}|\d{10,11})$/, "Telefone inválido. Use formato brasileiro: (11) 99999-9999"),
+});
 
 interface Product {
   id: string;
@@ -113,26 +119,39 @@ const PublicStore = () => {
   };
 
   const handleCheckout = async () => {
-    if (!customerName.trim() || !customerPhone.trim()) {
-      toast.error("Por favor, preencha seu nome e telefone");
+    if (cart.length === 0) {
+      toast.error("Seu carrinho está vazio");
       return;
     }
 
-    if (cart.length === 0) {
-      toast.error("Seu carrinho está vazio");
+    const validation = customerSchema.safeParse({
+      name: customerName,
+      phone: customerPhone,
+    });
+
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
     setSubmitting(true);
 
     try {
+      // Normalize phone number to include +55 if not present
+      let normalizedPhone = validation.data.phone.replace(/\D/g, "");
+      if (!normalizedPhone.startsWith("55")) {
+        normalizedPhone = "55" + normalizedPhone;
+      }
+      const formattedPhone = `+${normalizedPhone}`;
+
       // Criar ou buscar cliente
       let clientId: string;
       const { data: existingClient } = await supabase
         .from("clients")
         .select("id")
         .eq("restaurant_id", restaurantId)
-        .eq("phone", customerPhone)
+        .eq("phone", formattedPhone)
         .single();
 
       if (existingClient) {
@@ -142,8 +161,8 @@ const PublicStore = () => {
           .from("clients")
           .insert({
             restaurant_id: restaurantId,
-            name: customerName,
-            phone: customerPhone,
+            name: validation.data.name,
+            phone: formattedPhone,
           })
           .select("id")
           .single();

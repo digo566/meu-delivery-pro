@@ -8,6 +8,19 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2, Store } from "lucide-react";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  email: z.string().trim().email("Email inválido").max(255, "Email muito longo"),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").max(128, "Senha muito longa"),
+});
+
+const signupSchema = z.object({
+  restaurantName: z.string().trim().min(1, "Nome do restaurante é obrigatório").max(100, "Nome muito longo"),
+  phone: z.string().trim().regex(/^(\+55\d{10,11}|\(\d{2}\)\s?\d{4,5}-?\d{4}|\d{10,11})$/, "Telefone inválido. Use formato brasileiro: (11) 99999-9999"),
+  email: z.string().trim().email("Email inválido").max(255, "Email muito longo"),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").max(128, "Senha muito longa"),
+});
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -22,9 +35,18 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      const validation = loginSchema.safeParse({ email, password });
+      
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        toast.error(firstError.message);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: validation.data.email,
+        password: validation.data.password,
       });
 
       if (error) throw error;
@@ -45,14 +67,34 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const validation = signupSchema.safeParse({
+        restaurantName,
+        phone,
         email,
         password,
+      });
+      
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        toast.error(firstError.message);
+        setLoading(false);
+        return;
+      }
+
+      // Normalize phone number to include +55 if not present
+      let normalizedPhone = validation.data.phone.replace(/\D/g, "");
+      if (!normalizedPhone.startsWith("55")) {
+        normalizedPhone = "55" + normalizedPhone;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: validation.data.email,
+        password: validation.data.password,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
-            restaurant_name: restaurantName,
-            phone: phone,
+            restaurant_name: validation.data.restaurantName,
+            phone: `+${normalizedPhone}`,
           },
         },
       });

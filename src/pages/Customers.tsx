@@ -191,8 +191,10 @@ const Customers = () => {
                       variant="outline"
                       className="flex-1"
                       onClick={() => {
+                        const sanitizedPhone = client.phone.replace(/\D/g, "");
+                        const sanitizedName = encodeURIComponent(client.name);
                         window.open(
-                          `https://wa.me/${client.phone.replace(/\D/g, "")}?text=Olá%20${client.name}!`,
+                          `https://wa.me/${sanitizedPhone}?text=Olá%20${sanitizedName}!`,
                           "_blank"
                         );
                       }}
