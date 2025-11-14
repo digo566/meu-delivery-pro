@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { ImageUpload } from "@/components/ImageUpload";
 
 interface Product {
   id: string;
@@ -29,6 +30,7 @@ const Products = () => {
     name: "",
     description: "",
     price: "",
+    cost_price: "",
     image_url: "",
     available: true,
   });
@@ -119,6 +121,7 @@ const Products = () => {
         name: product.name,
         description: product.description || "",
         price: product.price.toString(),
+        cost_price: "",
         image_url: product.image_url || "",
         available: product.available,
       });
@@ -134,6 +137,7 @@ const Products = () => {
       name: "",
       description: "",
       price: "",
+      cost_price: "",
       image_url: "",
       available: true,
     });
@@ -193,7 +197,7 @@ const Products = () => {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="price">Preço</Label>
+                    <Label htmlFor="price">Preço (R$)</Label>
                     <Input
                       id="price"
                       type="number"
@@ -204,12 +208,22 @@ const Products = () => {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="image_url">URL da Imagem</Label>
+                    <Label htmlFor="cost_price">Custo (R$)</Label>
                     <Input
-                      id="image_url"
-                      type="url"
-                      value={formData.image_url}
-                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                      id="cost_price"
+                      type="number"
+                      step="0.01"
+                      value={formData.cost_price}
+                      onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Imagem do Produto</Label>
+                    <ImageUpload
+                      bucket="product-images"
+                      path={`product-${Date.now()}`}
+                      currentImageUrl={formData.image_url}
+                      onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
                     />
                   </div>
                   <div className="flex items-center justify-between">
