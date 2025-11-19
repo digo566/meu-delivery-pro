@@ -35,6 +35,7 @@ const checkoutSchema = z.object({
 export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, restaurantId, guestCartId }: CartModalProps) {
   const [step, setStep] = useState<'cart' | 'data' | 'payment'>('cart');
   const [loading, setLoading] = useState(false);
+  const [savedCartId, setSavedCartId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -50,7 +51,7 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
     setStep('data');
   };
 
-  const handleDataSubmit = (e: React.FormEvent) => {
+  const handleDataSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const dataValidation = checkoutSchema.safeParse({
@@ -64,24 +65,9 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
       return;
     }
     
-    setStep('payment');
-  };
-
-  const handleFinalSubmit = async () => {
-    if (!formData.paymentMethod) {
-      toast.error("Selecione uma forma de pagamento");
-      return;
-    }
-
-    if (formData.paymentMethod === "dinheiro" && formData.needsChange && !formData.changeAmount) {
-      toast.error("Informe o valor para o troco");
-      return;
-    }
-
     setLoading(true);
 
     try {
-
       // Verificar se cliente já existe pelo WhatsApp
       const { data: existingClient } = await supabase
         .from("clients")
@@ -134,8 +120,8 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
 
       if (cartError) throw cartError;
 
-      // Adicionar itens ao carrinho
-      const cartItemsToInsert = items.map(item => ({
+      // Transferir itens do guest cart para o carrinho permanente
+      const cartItems = items.map((item) => ({
         cart_id: newCart.id,
         product_id: item.id,
         quantity: item.quantity,
@@ -143,16 +129,56 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
 
       const { error: itemsError } = await supabase
         .from("cart_items")
-        .insert(cartItemsToInsert);
+        .insert(cartItems);
 
       if (itemsError) throw itemsError;
+
+      // Salvar o ID do carrinho para usar no pedido
+      setSavedCartId(newCart.id);
+      
+      setStep('payment');
+    } catch (error) {
+      console.error("Erro ao salvar carrinho:", error);
+      toast.error("Erro ao salvar dados. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFinalSubmit = async () => {
+    if (!formData.paymentMethod) {
+      toast.error("Selecione uma forma de pagamento");
+      return;
+    }
+
+    if (formData.paymentMethod === "dinheiro" && formData.needsChange && !formData.changeAmount) {
+      toast.error("Informe o valor para o troco");
+      return;
+    }
+
+    if (!savedCartId) {
+      toast.error("Erro: carrinho não encontrado");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Obter o client_id do carrinho
+      const { data: cart } = await supabase
+        .from("carts")
+        .select("client_id")
+        .eq("id", savedCartId)
+        .single();
+
+      if (!cart) throw new Error("Carrinho não encontrado");
 
       // Criar pedido
       const { error: orderError } = await supabase
         .from("orders")
         .insert({
-          cart_id: newCart.id,
-          client_id: clientId,
+          cart_id: savedCartId,
+          client_id: cart.client_id,
           restaurant_id: restaurantId,
           total_amount: total,
           status: "pending",
