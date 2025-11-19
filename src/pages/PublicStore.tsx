@@ -17,7 +17,9 @@ const customerSchema = z.object({
   name: z.string().trim().min(2, "Nome deve ter no mínimo 2 caracteres").max(100, "Nome muito longo"),
   phone: z.string().trim().regex(/^(\+55\d{10,11}|\(\d{2}\)\s?\d{4,5}-?\d{4}|\d{10,11})$/, "Telefone inválido. Use formato brasileiro: (11) 99999-9999"),
   address: z.string().trim().min(10, "Endereço deve ter no mínimo 10 caracteres").max(500, "Endereço muito longo"),
-  paymentMethod: z.enum(["pix", "dinheiro", "debito", "credito"], { required_error: "Selecione uma forma de pagamento" }),
+  paymentMethod: z.string().min(1, "Selecione uma forma de pagamento"),
+  needsChange: z.boolean().optional(),
+  changeAmount: z.string().optional(),
 });
 
 interface Product {
@@ -50,6 +52,8 @@ const PublicStore = () => {
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
+  const [needsChange, setNeedsChange] = useState(false);
+  const [changeAmount, setChangeAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -145,6 +149,8 @@ const PublicStore = () => {
       phone: customerPhone,
       address: customerAddress,
       paymentMethod: paymentMethod,
+      needsChange: needsChange,
+      changeAmount: changeAmount,
     });
 
     if (!validation.success) {
