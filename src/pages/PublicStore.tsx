@@ -105,9 +105,15 @@ const PublicStore = () => {
         .select("*")
         .eq("user_id", userId)
         .eq("restaurant_id", restaurantId)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        console.error("Cliente não encontrado para este restaurante");
+        return;
+      }
+      
       setClientData(data);
       if (data.address) {
         setCustomerAddress(data.address);
@@ -124,9 +130,14 @@ const PublicStore = () => {
         .select("id")
         .eq("user_id", userId)
         .eq("restaurant_id", restaurantId)
-        .single();
+        .maybeSingle();
 
       if (clientError) throw clientError;
+      
+      if (!clientData) {
+        console.error("Cliente não encontrado para este restaurante");
+        return;
+      }
 
       const { data: cartData, error: cartError } = await supabase
         .from("carts")
@@ -181,9 +192,16 @@ const PublicStore = () => {
         .from("profiles")
         .select("restaurant_name, phone")
         .eq("id", restaurantId)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
+      
+      if (!profileData) {
+        setRestaurantInfo(null);
+        setLoading(false);
+        return;
+      }
+      
       setRestaurantInfo(profileData);
 
       const { data: productsData, error: productsError } = await supabase
