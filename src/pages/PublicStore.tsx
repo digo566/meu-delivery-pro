@@ -492,52 +492,77 @@ const PublicStore = () => {
       </div>
 
       <div className="container mx-auto py-8 px-4">
-        {!isAuthenticated && (
-          <Card className="mb-6 border-primary bg-primary/5">
-            <CardContent className="pt-6 text-center">
-              <div className="mb-4">
-                <ShoppingCart className="h-12 w-12 mx-auto text-primary mb-2" />
-                <h3 className="font-semibold text-lg mb-2">Bem-vindo!</h3>
-                <p className="text-muted-foreground">
-                  Para fazer seu pedido, entre com seu WhatsApp ou crie uma conta rapidamente
-                </p>
-              </div>
-              <Button onClick={() => setAuthModalOpen(true)} size="lg" className="w-full">
-                Entrar / Criar Conta
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        <h2 className="text-2xl font-bold mb-6">Nosso Cardápio</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <Card key={product.id}>
-              {product.image_url && (
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  className="w-full h-48 object-cover rounded-t-lg"
-                />
-              )}
-              <CardHeader>
-                <CardTitle>{product.name}</CardTitle>
-                <CardDescription>{product.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-center">
-                  <span className="text-2xl font-bold text-primary">
-                    R$ {product.price.toFixed(2)}
-                  </span>
-                  <Button onClick={() => handleAddToCart(product)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar
+        {!isAuthenticated ? (
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <Card className="max-w-md w-full border-primary shadow-lg">
+              <CardContent className="pt-8 pb-8 text-center">
+                <div className="mb-6">
+                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ShoppingCart className="h-10 w-10 text-primary" />
+                  </div>
+                  <h2 className="font-bold text-2xl mb-2">Faça seu Pedido!</h2>
+                  <p className="text-muted-foreground text-sm">
+                    Para visualizar nosso cardápio e fazer pedidos, você precisa entrar com seu WhatsApp ou criar uma conta
+                  </p>
+                </div>
+                
+                <div className="space-y-3">
+                  <Button 
+                    onClick={() => setAuthModalOpen(true)} 
+                    size="lg" 
+                    className="w-full"
+                  >
+                    Entrar / Criar Conta
                   </Button>
+                  
+                  <div className="text-xs text-muted-foreground">
+                    É rápido e fácil! Use apenas seu WhatsApp e senha
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <>
+            <h2 className="text-2xl font-bold mb-6">Nosso Cardápio</h2>
+            {products.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">Nenhum produto disponível no momento</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {products.map((product) => (
+                  <Card key={product.id}>
+                    {product.image_url && (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="w-full h-48 object-cover rounded-t-lg"
+                      />
+                    )}
+                    <CardHeader>
+                      <CardTitle>{product.name}</CardTitle>
+                      <CardDescription>{product.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex justify-between items-center">
+                        <span className="text-2xl font-bold text-primary">
+                          R$ {product.price.toFixed(2)}
+                        </span>
+                        <Button onClick={() => handleAddToCart(product)}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Adicionar
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       <ClientAuth
