@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -32,31 +33,54 @@ const checkoutSchema = z.object({
 });
 
 export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, restaurantId, guestCartId }: CartModalProps) {
-  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [step, setStep] = useState<'cart' | 'data' | 'payment'>('cart');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     address: "",
+    paymentMethod: "",
+    needsChange: false,
+    changeAmount: "",
   });
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   const handleFinalizarClick = () => {
-    setShowCheckoutForm(true);
+    setStep('data');
   };
 
-  const handleSubmitCheckout = async (e: React.FormEvent) => {
+  const handleDataSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const dataValidation = checkoutSchema.safeParse({
+      name: formData.name,
+      phone: formData.phone,
+      address: formData.address,
+    });
+    
+    if (!dataValidation.success) {
+      toast.error(dataValidation.error.errors[0].message);
+      return;
+    }
+    
+    setStep('payment');
+  };
+
+  const handleFinalSubmit = async () => {
+    if (!formData.paymentMethod) {
+      toast.error("Selecione uma forma de pagamento");
+      return;
+    }
+
+    if (formData.paymentMethod === "dinheiro" && formData.needsChange && !formData.changeAmount) {
+      toast.error("Informe o valor para o troco");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const validation = checkoutSchema.safeParse(formData);
-      if (!validation.success) {
-        toast.error(validation.error.errors[0].message);
-        setLoading(false);
-        return;
-      }
 
       // Verificar se cliente já existe pelo WhatsApp
       const { data: existingClient } = await supabase
@@ -123,26 +147,56 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
 
       if (itemsError) throw itemsError;
 
+      // Criar pedido
+      const { error: orderError } = await supabase
+        .from("orders")
+        .insert({
+          cart_id: newCart.id,
+          client_id: clientId,
+          restaurant_id: restaurantId,
+          total_amount: total,
+          status: "pending",
+          payment_method: formData.paymentMethod,
+          needs_change: formData.needsChange,
+          change_amount: formData.needsChange && formData.changeAmount ? parseFloat(formData.changeAmount) : null,
+        });
+
+      if (orderError) throw orderError;
+
       // Limpar carrinho local
       if (guestCartId) {
         localStorage.removeItem(`cartItems_${guestCartId}`);
         localStorage.removeItem(`guestCart_${restaurantId}`);
       }
 
-      toast.success("Dados salvos! Finalize seu pedido.");
-      setShowCheckoutForm(false);
-      onCheckout();
+      toast.success("Pedido realizado com sucesso!");
+      setStep('cart');
+      setFormData({
+        name: "",
+        phone: "",
+        address: "",
+        paymentMethod: "",
+        needsChange: false,
+        changeAmount: "",
+      });
+      onClose();
       
       // Recarregar página após 1 segundo
       setTimeout(() => {
         window.location.reload();
       }, 1000);
     } catch (error) {
-      console.error("Erro ao processar checkout:", error);
+      console.error("Erro ao processar pedido:", error);
       toast.error("Erro ao processar. Tente novamente.");
     } finally {
       setLoading(false);
     }
+  };
+
+  const getTitle = () => {
+    if (step === 'data') return "Seus Dados para Entrega";
+    if (step === 'payment') return "Forma de Pagamento";
+    return "Item Adicionado ao Carrinho";
   };
 
   return (
@@ -151,11 +205,11 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
-            {showCheckoutForm ? "Seus Dados para Entrega" : "Item Adicionado ao Carrinho"}
+            {getTitle()}
           </DialogTitle>
         </DialogHeader>
 
-        {!showCheckoutForm ? (
+        {step === 'cart' && (
           <div className="space-y-4">
             <div className="space-y-2">
               {items.map((item) => (
@@ -184,8 +238,10 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
               </Button>
             </div>
           </div>
-        ) : (
-          <form onSubmit={handleSubmitCheckout} className="space-y-4">
+        )}
+
+        {step === 'data' && (
+          <form onSubmit={handleDataSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nome Completo</Label>
               <Input
@@ -227,12 +283,12 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
             </div>
 
             <div className="flex flex-col gap-2">
-              <Button type="submit" size="lg" className="w-full" disabled={loading}>
-                {loading ? "Processando..." : "Confirmar Pedido"}
+              <Button type="submit" size="lg" className="w-full">
+                Continuar
               </Button>
               <Button 
                 type="button" 
-                onClick={() => setShowCheckoutForm(false)} 
+                onClick={() => setStep('cart')} 
                 variant="outline" 
                 size="lg" 
                 className="w-full"
@@ -241,6 +297,84 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
               </Button>
             </div>
           </form>
+        )}
+
+        {step === 'payment' && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="paymentMethod">Forma de Pagamento</Label>
+              <Select
+                value={formData.paymentMethod}
+                onValueChange={(value) => setFormData({ ...formData, paymentMethod: value, needsChange: false, changeAmount: "" })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="pix">Pix</SelectItem>
+                  <SelectItem value="credito">Cartão de Crédito</SelectItem>
+                  <SelectItem value="debito">Cartão de Débito</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {formData.paymentMethod === "dinheiro" && (
+              <div className="space-y-3 border-t pt-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="needsChange"
+                    checked={formData.needsChange}
+                    onChange={(e) => setFormData({ ...formData, needsChange: e.target.checked, changeAmount: "" })}
+                    className="h-4 w-4"
+                  />
+                  <Label htmlFor="needsChange" className="cursor-pointer">Preciso de troco</Label>
+                </div>
+
+                {formData.needsChange && (
+                  <div className="space-y-2">
+                    <Label htmlFor="changeAmount">Troco para quanto?</Label>
+                    <Input
+                      id="changeAmount"
+                      type="number"
+                      placeholder="Ex: 50"
+                      value={formData.changeAmount}
+                      onChange={(e) => setFormData({ ...formData, changeAmount: e.target.value })}
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="border-t pt-2">
+              <div className="flex justify-between font-semibold text-lg">
+                <span>Total</span>
+                <span>R$ {total.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Button 
+                onClick={handleFinalSubmit} 
+                size="lg" 
+                className="w-full" 
+                disabled={loading}
+              >
+                {loading ? "Processando..." : "Confirmar Pedido"}
+              </Button>
+              <Button 
+                type="button" 
+                onClick={() => setStep('data')} 
+                variant="outline" 
+                size="lg" 
+                className="w-full"
+              >
+                Voltar
+              </Button>
+            </div>
+          </div>
         )}
       </DialogContent>
     </Dialog>
