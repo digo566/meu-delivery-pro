@@ -244,7 +244,8 @@ const PublicStore = () => {
       setChangeAmount("");
       setCheckoutOpen(false);
     } catch (error: any) {
-      toast.error("Erro ao finalizar pedido");
+      console.error("Erro detalhado ao finalizar pedido:", error);
+      toast.error(error.message || "Erro ao finalizar pedido");
     } finally {
       setSubmitting(false);
     }
