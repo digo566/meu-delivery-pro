@@ -211,6 +211,8 @@ const PublicStore = () => {
           total_amount: getCartTotal(),
           status: "pending",
           payment_method: validation.data.paymentMethod,
+          needs_change: validation.data.needsChange || false,
+          change_amount: validation.data.changeAmount ? parseFloat(validation.data.changeAmount) : null,
         })
         .select("id")
         .single();
@@ -238,6 +240,8 @@ const PublicStore = () => {
       setCustomerPhone("");
       setCustomerAddress("");
       setPaymentMethod("");
+      setNeedsChange(false);
+      setChangeAmount("");
       setCheckoutOpen(false);
     } catch (error: any) {
       toast.error("Erro ao finalizar pedido");
@@ -444,10 +448,10 @@ const PublicStore = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="payment">Forma de Pagamento</Label>
+                <Label htmlFor="payment">Forma de Pagamento *</Label>
                 <Select value={paymentMethod} onValueChange={setPaymentMethod} required>
                   <SelectTrigger id="payment">
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder="Selecione a forma de pagamento" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pix">PIX</SelectItem>
@@ -457,6 +461,39 @@ const PublicStore = () => {
                   </SelectContent>
                 </Select>
               </div>
+              {paymentMethod === "dinheiro" && (
+                <>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="needsChange"
+                      checked={needsChange}
+                      onChange={(e) => {
+                        setNeedsChange(e.target.checked);
+                        if (!e.target.checked) setChangeAmount("");
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="needsChange" className="cursor-pointer">
+                      Preciso de troco
+                    </Label>
+                  </div>
+                  {needsChange && (
+                    <div>
+                      <Label htmlFor="changeAmount">Troco para quanto? *</Label>
+                      <Input
+                        id="changeAmount"
+                        type="number"
+                        step="0.01"
+                        value={changeAmount}
+                        onChange={(e) => setChangeAmount(e.target.value)}
+                        placeholder="Ex: 50.00"
+                        required
+                      />
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
