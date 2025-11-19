@@ -3,29 +3,20 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Minus, ShoppingCart, Store, Trash2 } from "lucide-react";
+import { Plus, Minus, ShoppingCart, Store, Trash2, LogOut } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { z } from "zod";
+import { ClientAuth } from "@/components/ClientAuth";
+import { CartModal } from "@/components/CartModal";
 
 const customerSchema = z.object({
-  name: z.string().trim().min(2, "Nome deve ter no mínimo 2 caracteres").max(100, "Nome muito longo"),
-  phone: z.string().trim().regex(/^(\+55\d{10,11}|\(\d{2}\)\s?\d{4,5}-?\d{4}|\d{10,11})$/, "Telefone inválido. Use formato brasileiro: (11) 99999-9999"),
   address: z.string().trim().min(10, "Endereço deve ter no mínimo 10 caracteres").max(500, "Endereço muito longo"),
   paymentMethod: z.string().min(1, "Selecione uma forma de pagamento"),
-}).refine((data) => {
-  // Se for dinheiro e precisa de troco, validar o valor do troco
-  if (data.paymentMethod === "dinheiro") {
-    return true; // Sempre válido, troco é opcional
-  }
-  return true;
-}, {
-  message: "Dados de pagamento incompletos",
 });
 
 interface Product {
@@ -46,30 +37,146 @@ interface RestaurantInfo {
   phone: string;
 }
 
+interface ClientData {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  address: string | null;
+}
+
 const PublicStore = () => {
   const { restaurantId } = useParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [cartModalOpen, setCartModalOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [restaurantInfo, setRestaurantInfo] = useState<RestaurantInfo | null>(null);
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [clientData, setClientData] = useState<ClientData | null>(null);
   const [customerAddress, setCustomerAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [needsChange, setNeedsChange] = useState(false);
   const [changeAmount, setChangeAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [currentCartId, setCurrentCartId] = useState<string | null>(null);
 
   useEffect(() => {
     if (restaurantId) {
       loadStoreData();
+      checkAuth();
     }
   }, [restaurantId]);
 
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          setIsAuthenticated(true);
+          await loadClientData(session.user.id);
+          await loadOrCreateCart(session.user.id);
+        } else {
+          setIsAuthenticated(false);
+          setClientData(null);
+          setCurrentCartId(null);
+          setCart([]);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [restaurantId]);
+
+  const checkAuth = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      setIsAuthenticated(true);
+      await loadClientData(session.user.id);
+      await loadOrCreateCart(session.user.id);
+    }
+  };
+
+  const loadClientData = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("restaurant_id", restaurantId)
+        .single();
+
+      if (error) throw error;
+      setClientData(data);
+      if (data.address) {
+        setCustomerAddress(data.address);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar dados do cliente:", error);
+    }
+  };
+
+  const loadOrCreateCart = async (userId: string) => {
+    try {
+      const { data: clientData, error: clientError } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("restaurant_id", restaurantId)
+        .single();
+
+      if (clientError) throw clientError;
+
+      const { data: cartData, error: cartError } = await supabase
+        .from("carts")
+        .select(`
+          id,
+          cart_items(
+            id,
+            quantity,
+            product_id,
+            products(*)
+          )
+        `)
+        .eq("client_id", clientData.id)
+        .eq("restaurant_id", restaurantId)
+        .eq("is_abandoned", false)
+        .is("abandoned_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (cartError) throw cartError;
+
+      if (cartData && cartData.length > 0) {
+        const existingCart = cartData[0];
+        setCurrentCartId(existingCart.id);
+
+        const items: CartItem[] = existingCart.cart_items.map((item: any) => ({
+          ...item.products,
+          quantity: item.quantity,
+        }));
+        setCart(items);
+      } else {
+        const { data: newCart, error: newCartError } = await supabase
+          .from("carts")
+          .insert({
+            client_id: clientData.id,
+            restaurant_id: restaurantId,
+          })
+          .select()
+          .single();
+
+        if (newCartError) throw newCartError;
+        setCurrentCartId(newCart.id);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar/criar carrinho:", error);
+    }
+  };
+
   const loadStoreData = async () => {
     try {
-      // Carregar informações do restaurante
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("restaurant_name, phone")
@@ -79,7 +186,6 @@ const PublicStore = () => {
       if (profileError) throw profileError;
       setRestaurantInfo(profileData);
 
-      // Carregar produtos
       const { data: productsData, error: productsError } = await supabase
         .from("products")
         .select("*")
@@ -96,42 +202,81 @@ const PublicStore = () => {
     }
   };
 
-  const addToCart = (product: Product) => {
+  const handleAddToCart = async (product: Product) => {
+    if (!isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
+
     const existingItem = cart.find((item) => item.id === product.id);
     
+    let newCart: CartItem[];
     if (existingItem) {
-      setCart(
-        cart.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
+      newCart = cart.map((item) =>
+        item.id === product.id
+          ? { ...item, quantity: item.quantity + 1 }
+          : item
       );
     } else {
-      setCart([...cart, { ...product, quantity: 1 }]);
+      newCart = [...cart, { ...product, quantity: 1 }];
     }
+
+    setCart(newCart);
+    await syncCartToDatabase(newCart);
+    setCartModalOpen(true);
     toast.success("Produto adicionado ao carrinho!");
   };
 
-  const updateQuantity = (productId: string, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      setCart(cart.filter((item) => item.id !== productId));
-      return;
+  const syncCartToDatabase = async (cartItems: CartItem[]) => {
+    if (!currentCartId) return;
+
+    try {
+      await supabase
+        .from("cart_items")
+        .delete()
+        .eq("cart_id", currentCartId);
+
+      const itemsToInsert = cartItems.map((item) => ({
+        cart_id: currentCartId,
+        product_id: item.id,
+        quantity: item.quantity,
+      }));
+
+      if (itemsToInsert.length > 0) {
+        await supabase.from("cart_items").insert(itemsToInsert);
+      }
+
+      await supabase
+        .from("carts")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", currentCartId);
+    } catch (error) {
+      console.error("Erro ao sincronizar carrinho:", error);
     }
-    
-    setCart(
-      cart.map((item) =>
-        item.id === productId ? { ...item, quantity: newQuantity } : item
-      )
-    );
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter((item) => item.id !== productId));
+  const updateQuantity = async (productId: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+
+    const newCart = cart.map((item) =>
+      item.id === productId ? { ...item, quantity: newQuantity } : item
+    );
+    setCart(newCart);
+    await syncCartToDatabase(newCart);
+  };
+
+  const removeFromCart = async (productId: string) => {
+    const newCart = cart.filter((item) => item.id !== productId);
+    setCart(newCart);
+    await syncCartToDatabase(newCart);
+    toast.success("Produto removido do carrinho");
   };
 
   const getCartTotal = () => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 
   const handleCheckout = async () => {
@@ -140,86 +285,53 @@ const PublicStore = () => {
       return;
     }
 
-    // Validar troco se for dinheiro e marcou que precisa
-    if (paymentMethod === "dinheiro" && needsChange && !changeAmount) {
-      toast.error("Informe o valor do troco");
+    if (!clientData) {
+      toast.error("Dados do cliente não encontrados");
       return;
     }
 
     const validation = customerSchema.safeParse({
-      name: customerName,
-      phone: customerPhone,
       address: customerAddress,
-      paymentMethod: paymentMethod,
+      paymentMethod,
     });
 
     if (!validation.success) {
-      const firstError = validation.error.errors[0];
-      toast.error(firstError.message);
+      toast.error(validation.error.errors[0].message);
       return;
     }
 
     setSubmitting(true);
 
     try {
-      // Normalize phone number to include +55 if not present
-      let normalizedPhone = validation.data.phone.replace(/\D/g, "");
-      if (!normalizedPhone.startsWith("55")) {
-        normalizedPhone = "55" + normalizedPhone;
-      }
-      const formattedPhone = `+${normalizedPhone}`;
-
-      // Criar ou buscar cliente
-      let clientId: string;
-      const { data: existingClient } = await supabase
-        .from("clients")
-        .select("id")
-        .eq("restaurant_id", restaurantId)
-        .eq("phone", formattedPhone)
-        .single();
-
-      if (existingClient) {
-        clientId = existingClient.id;
-        
-        // Atualizar endereço do cliente existente
+      if (customerAddress !== clientData.address) {
         await supabase
           .from("clients")
-          .update({ address: validation.data.address })
-          .eq("id", clientId);
-      } else {
-        const { data: newClient, error: clientError } = await supabase
-          .from("clients")
-          .insert({
-            restaurant_id: restaurantId,
-            name: validation.data.name,
-            phone: formattedPhone,
-            address: validation.data.address,
-          })
-          .select("id")
-          .single();
-
-        if (clientError) throw clientError;
-        clientId = newClient.id;
+          .update({ address: customerAddress })
+          .eq("id", clientData.id);
       }
 
-      // Criar pedido
+      const orderData: any = {
+        restaurant_id: restaurantId,
+        client_id: clientData.id,
+        total_amount: getCartTotal(),
+        payment_method: paymentMethod,
+        status: "pending",
+        cart_id: currentCartId,
+      };
+
+      if (paymentMethod === "dinheiro" && needsChange && changeAmount) {
+        orderData.needs_change = true;
+        orderData.change_amount = parseFloat(changeAmount);
+      }
+
       const { data: order, error: orderError } = await supabase
         .from("orders")
-        .insert({
-          restaurant_id: restaurantId,
-          client_id: clientId,
-          total_amount: getCartTotal(),
-          status: "pending",
-          payment_method: validation.data.paymentMethod,
-          needs_change: needsChange,
-          change_amount: changeAmount ? parseFloat(changeAmount) : null,
-        })
-        .select("id")
+        .insert(orderData)
+        .select()
         .single();
 
       if (orderError) throw orderError;
 
-      // Criar itens do pedido
       const orderItems = cart.map((item) => ({
         order_id: order.id,
         product_id: item.id,
@@ -234,27 +346,39 @@ const PublicStore = () => {
 
       if (itemsError) throw itemsError;
 
-      toast.success("Pedido enviado com sucesso! O restaurante entrará em contato pelo WhatsApp.");
       setCart([]);
-      setCustomerName("");
-      setCustomerPhone("");
-      setCustomerAddress("");
+      setCheckoutOpen(false);
       setPaymentMethod("");
       setNeedsChange(false);
       setChangeAmount("");
-      setCheckoutOpen(false);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await loadOrCreateCart(user.id);
+      }
+
+      toast.success("Pedido realizado com sucesso! O restaurante entrará em contato.");
     } catch (error: any) {
-      console.error("Erro detalhado ao finalizar pedido:", error);
-      toast.error(error.message || "Erro ao finalizar pedido");
+      console.error("Erro ao criar pedido:", error);
+      toast.error("Erro ao processar pedido. Tente novamente.");
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setIsAuthenticated(false);
+    setClientData(null);
+    setCart([]);
+    setCurrentCartId(null);
+    toast.success("Você saiu da sua conta");
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -262,251 +386,254 @@ const PublicStore = () => {
   if (!restaurantInfo) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Restaurante não encontrado</h1>
-          <p className="text-muted-foreground">Verifique o link e tente novamente</p>
-        </div>
+        <p className="text-muted-foreground">Restaurante não encontrado</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
-      <header className="bg-background border-b sticky top-0 z-10">
-        <div className="container py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <Store className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold">{restaurantInfo.restaurant_name}</h1>
-                <p className="text-sm text-muted-foreground">Faça seu pedido online</p>
-              </div>
+    <div className="min-h-screen bg-background">
+      <div className="bg-primary text-primary-foreground p-6 shadow-lg">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <Store className="h-8 w-8" />
+            <div>
+              <h1 className="text-2xl font-bold">{restaurantInfo.restaurant_name}</h1>
+              <p className="text-sm opacity-90">{restaurantInfo.phone}</p>
             </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {isAuthenticated && clientData && (
+              <div className="text-right">
+                <p className="text-sm font-medium">{clientData.name}</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="h-auto p-0 text-xs hover:bg-transparent"
+                >
+                  <LogOut className="h-3 w-3 mr-1" />
+                  Sair
+                </Button>
+              </div>
+            )}
+            
             <Button
+              variant="secondary"
+              size="lg"
               onClick={() => setCheckoutOpen(true)}
               className="relative"
               disabled={cart.length === 0}
             >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Carrinho
+              <ShoppingCart className="h-5 w-5 mr-2" />
+              Carrinho ({cart.length})
               {cart.length > 0 && (
-                <Badge className="ml-2 bg-destructive text-destructive-foreground">
+                <Badge className="ml-2" variant="destructive">
                   {cart.length}
                 </Badge>
               )}
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
-      <main className="container py-8">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {products.length === 0 ? (
-            <Card className="col-span-full">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <p className="text-muted-foreground">
-                  Nenhum produto disponível no momento
-                </p>
+      <div className="container mx-auto py-8 px-4">
+        {!isAuthenticated && (
+          <Card className="mb-6 border-primary">
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground mb-4">
+                Faça login ou crie uma conta para adicionar produtos ao carrinho
+              </p>
+              <Button onClick={() => setAuthModalOpen(true)} className="w-full">
+                Entrar / Cadastrar
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        <h2 className="text-2xl font-bold mb-6">Nosso Cardápio</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {products.map((product) => (
+            <Card key={product.id}>
+              {product.image_url && (
+                <img
+                  src={product.image_url}
+                  alt={product.name}
+                  className="w-full h-48 object-cover rounded-t-lg"
+                />
+              )}
+              <CardHeader>
+                <CardTitle>{product.name}</CardTitle>
+                <CardDescription>{product.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center">
+                  <span className="text-2xl font-bold text-primary">
+                    R$ {product.price.toFixed(2)}
+                  </span>
+                  <Button onClick={() => handleAddToCart(product)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar
+                  </Button>
+                </div>
               </CardContent>
             </Card>
-          ) : (
-            products.map((product) => (
-              <Card key={product.id} className="overflow-hidden">
-                {product.image_url && (
-                  <img
-                    src={product.image_url}
-                    alt={product.name}
-                    className="w-full h-48 object-cover"
-                  />
-                )}
-                <CardHeader>
-                  <CardTitle>{product.name}</CardTitle>
-                  <CardDescription>{product.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <p className="text-2xl font-bold text-primary">
-                      R$ {product.price.toFixed(2)}
-                    </p>
-                    <Button onClick={() => addToCart(product)}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Adicionar
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+          ))}
         </div>
-      </main>
+      </div>
+
+      <ClientAuth
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={() => {
+          setAuthModalOpen(false);
+          toast.success("Bem-vindo! Agora você pode adicionar produtos ao carrinho.");
+        }}
+        restaurantId={restaurantId!}
+      />
+
+      <CartModal
+        isOpen={cartModalOpen}
+        onClose={() => setCartModalOpen(false)}
+        onContinue={() => setCartModalOpen(false)}
+        onCheckout={() => {
+          setCartModalOpen(false);
+          setCheckoutOpen(true);
+        }}
+        items={cart.map((item) => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        }))}
+      />
 
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Finalizar Pedido</DialogTitle>
-            <DialogDescription>
-              Revise seu pedido e preencha seus dados
-            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {cart.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 border rounded">
-                  <div className="flex-1">
-                    <p className="font-medium">{item.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      R$ {item.price.toFixed(2)} cada
-                    </p>
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-semibold mb-3">Itens do Pedido</h3>
+              <div className="space-y-2">
+                {cart.map((item) => (
+                  <div key={item.id} className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="w-8 text-center">{item.quantity}</span>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <span>{item.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium">
+                        R$ {(item.price * item.quantity).toFixed(2)}
+                      </span>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => removeFromCart(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                    >
-                      <Minus className="w-4 h-4" />
-                    </Button>
-                    <span className="w-8 text-center font-semibold">{item.quantity}</span>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => removeFromCart(item.id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
+                ))}
+              </div>
+              <div className="border-t mt-4 pt-4">
+                <div className="flex justify-between text-lg font-bold">
+                  <span>Total</span>
+                  <span>R$ {getCartTotal().toFixed(2)}</span>
                 </div>
-              ))}
-            </div>
-
-            <div className="border-t pt-4">
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total:</span>
-                <span className="text-primary">R$ {getCartTotal().toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="space-y-3">
+            {clientData && (
               <div>
-                <Label htmlFor="name">Seu Nome</Label>
-                <Input
-                  id="name"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Digite seu nome"
-                  required
-                />
+                <h3 className="font-semibold mb-3">Dados do Cliente</h3>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Nome:</strong> {clientData.name}</p>
+                  <p><strong>Telefone:</strong> {clientData.phone}</p>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="phone">WhatsApp</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder="(11) 99999-9999"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="address">Endereço de Entrega</Label>
-                <Textarea
-                  id="address"
-                  value={customerAddress}
-                  onChange={(e) => setCustomerAddress(e.target.value)}
-                  placeholder="Rua, número, complemento, bairro, cidade"
-                  required
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="payment">Forma de Pagamento *</Label>
-                <Select value={paymentMethod} onValueChange={(value) => {
-                  console.log("Pagamento selecionado:", value);
-                  setPaymentMethod(value);
-                }} required>
-                  <SelectTrigger id="payment">
-                    <SelectValue placeholder="Selecione a forma de pagamento" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background z-50">
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                    <SelectItem value="debito">Cartão de Débito</SelectItem>
-                    <SelectItem value="credito">Cartão de Crédito</SelectItem>
-                  </SelectContent>
-                </Select>
-                {paymentMethod && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Selecionado: {paymentMethod}
-                  </p>
+            )}
+
+            <div>
+              <Label htmlFor="address">Endereço de Entrega</Label>
+              <Input
+                id="address"
+                value={customerAddress}
+                onChange={(e) => setCustomerAddress(e.target.value)}
+                placeholder="Rua, número, bairro, cidade"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="payment">Forma de Pagamento</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="cartao_credito">Cartão de Crédito</SelectItem>
+                  <SelectItem value="cartao_debito">Cartão de Débito</SelectItem>
+                  <SelectItem value="pix">PIX</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {paymentMethod === "dinheiro" && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="needsChange"
+                    checked={needsChange}
+                    onChange={(e) => setNeedsChange(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  <Label htmlFor="needsChange">Precisa de troco?</Label>
+                </div>
+
+                {needsChange && (
+                  <div>
+                    <Label htmlFor="changeAmount">Troco para quanto?</Label>
+                    <Input
+                      id="changeAmount"
+                      type="number"
+                      value={changeAmount}
+                      onChange={(e) => setChangeAmount(e.target.value)}
+                      placeholder="Ex: 50.00"
+                    />
+                  </div>
                 )}
               </div>
-              
-              {paymentMethod === "dinheiro" && (
-                <div className="space-y-3 p-4 bg-primary/10 rounded-lg border-2 border-primary/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                    <p className="text-sm font-semibold text-primary">Opções para pagamento em dinheiro</p>
-                  </div>
-                  <div>
-                    <Label className="text-base font-semibold">Precisa de troco?</Label>
-                    <Select 
-                      value={needsChange ? "sim" : "nao"} 
-                      onValueChange={(value) => {
-                        console.log("Troco selecionado:", value);
-                        setNeedsChange(value === "sim");
-                        if (value === "nao") setChangeAmount("");
-                      }}
-                    >
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-background z-50">
-                        <SelectItem value="nao">Não, tenho o valor exato</SelectItem>
-                        <SelectItem value="sim">Sim, preciso de troco</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  {needsChange && (
-                    <div className="animate-in fade-in-50 duration-200">
-                      <Label htmlFor="changeAmount" className="text-base font-semibold">
-                        Troco para quanto?
-                      </Label>
-                      <Input
-                        id="changeAmount"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={changeAmount}
-                        onChange={(e) => setChangeAmount(e.target.value)}
-                        placeholder="Ex: 50.00"
-                        className="mt-2"
-                        required
-                      />
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Informe o valor da nota para calcularmos o troco
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
           <DialogFooter>
-            <Button onClick={handleCheckout} disabled={submitting} className="w-full">
-              {submitting ? "Enviando..." : "Confirmar Pedido"}
+            <Button variant="outline" onClick={() => setCheckoutOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCheckout} disabled={submitting}>
+              {submitting ? "Processando..." : "Confirmar Pedido"}
             </Button>
           </DialogFooter>
         </DialogContent>
