@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,13 +7,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Minus, ShoppingCart, Store, Trash2 } from "lucide-react";
+import { Plus, Minus, ShoppingCart, Store, Trash2, User } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { z } from "zod";
 
 const customerSchema = z.object({
   name: z.string().trim().min(2, "Nome deve ter no mínimo 2 caracteres").max(100, "Nome muito longo"),
   phone: z.string().trim().regex(/^(\+55\d{10,11}|\(\d{2}\)\s?\d{4,5}-?\d{4}|\d{10,11})$/, "Telefone inválido. Use formato brasileiro: (11) 99999-9999"),
+  address: z.string().trim().min(10, "Endereço deve ter no mínimo 10 caracteres").max(500, "Endereço muito longo"),
+  paymentMethod: z.enum(["pix", "dinheiro", "debito", "credito"], { required_error: "Selecione uma forma de pagamento" }),
 });
 
 interface Product {
@@ -36,6 +40,7 @@ interface RestaurantInfo {
 
 const PublicStore = () => {
   const { restaurantId } = useParams();
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +48,18 @@ const PublicStore = () => {
   const [restaurantInfo, setRestaurantInfo] = useState<RestaurantInfo | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     if (restaurantId) {
@@ -127,6 +143,8 @@ const PublicStore = () => {
     const validation = customerSchema.safeParse({
       name: customerName,
       phone: customerPhone,
+      address: customerAddress,
+      paymentMethod: paymentMethod,
     });
 
     if (!validation.success) {
@@ -156,6 +174,12 @@ const PublicStore = () => {
 
       if (existingClient) {
         clientId = existingClient.id;
+        
+        // Atualizar endereço do cliente existente
+        await supabase
+          .from("clients")
+          .update({ address: validation.data.address })
+          .eq("id", clientId);
       } else {
         const { data: newClient, error: clientError } = await supabase
           .from("clients")
@@ -163,6 +187,7 @@ const PublicStore = () => {
             restaurant_id: restaurantId,
             name: validation.data.name,
             phone: formattedPhone,
+            address: validation.data.address,
           })
           .select("id")
           .single();
@@ -179,6 +204,7 @@ const PublicStore = () => {
           client_id: clientId,
           total_amount: getCartTotal(),
           status: "pending",
+          payment_method: validation.data.paymentMethod,
         })
         .select("id")
         .single();
@@ -200,10 +226,12 @@ const PublicStore = () => {
 
       if (itemsError) throw itemsError;
 
-      toast.success("Pedido enviado com sucesso!");
+      toast.success("Pedido enviado com sucesso! Faça login para acompanhar seu pedido.");
       setCart([]);
       setCustomerName("");
       setCustomerPhone("");
+      setCustomerAddress("");
+      setPaymentMethod("");
       setCheckoutOpen(false);
     } catch (error: any) {
       toast.error("Erro ao finalizar pedido");
@@ -245,11 +273,29 @@ const PublicStore = () => {
                 <p className="text-sm text-muted-foreground">Faça seu pedido online</p>
               </div>
             </div>
-            <Button
-              onClick={() => setCheckoutOpen(true)}
-              className="relative"
-              disabled={cart.length === 0}
-            >
+            <div className="flex gap-2">
+              {isLoggedIn ? (
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/my-orders?restaurantId=${restaurantId}`)}
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Meus Pedidos
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/client-auth?restaurantId=${restaurantId}`)}
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Entrar
+                </Button>
+              )}
+              <Button
+                onClick={() => setCheckoutOpen(true)}
+                className="relative"
+                disabled={cart.length === 0}
+              >
               <ShoppingCart className="w-4 h-4 mr-2" />
               Carrinho
               {cart.length > 0 && (
@@ -259,6 +305,7 @@ const PublicStore = () => {
               )}
             </Button>
           </div>
+        </div>
         </div>
       </header>
 
@@ -378,6 +425,31 @@ const PublicStore = () => {
                   placeholder="(11) 99999-9999"
                   required
                 />
+              </div>
+              <div>
+                <Label htmlFor="address">Endereço de Entrega</Label>
+                <Textarea
+                  id="address"
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                  placeholder="Rua, número, complemento, bairro, cidade"
+                  required
+                  rows={3}
+                />
+              </div>
+              <div>
+                <Label htmlFor="payment">Forma de Pagamento</Label>
+                <Select value={paymentMethod} onValueChange={setPaymentMethod} required>
+                  <SelectTrigger id="payment">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pix">PIX</SelectItem>
+                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                    <SelectItem value="debito">Cartão de Débito</SelectItem>
+                    <SelectItem value="credito">Cartão de Crédito</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
