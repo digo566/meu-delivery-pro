@@ -431,26 +431,39 @@ const PublicStore = () => {
               </div>
               <div>
                 <Label htmlFor="payment">Forma de Pagamento *</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod} required>
+                <Select value={paymentMethod} onValueChange={(value) => {
+                  console.log("Pagamento selecionado:", value);
+                  setPaymentMethod(value);
+                }} required>
                   <SelectTrigger id="payment">
                     <SelectValue placeholder="Selecione a forma de pagamento" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background z-50">
                     <SelectItem value="pix">PIX</SelectItem>
                     <SelectItem value="dinheiro">Dinheiro</SelectItem>
                     <SelectItem value="debito">Cartão de Débito</SelectItem>
                     <SelectItem value="credito">Cartão de Crédito</SelectItem>
                   </SelectContent>
                 </Select>
+                {paymentMethod && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Selecionado: {paymentMethod}
+                  </p>
+                )}
               </div>
               
               {paymentMethod === "dinheiro" && (
-                <div className="space-y-3 p-4 bg-muted/50 rounded-lg border-2">
+                <div className="space-y-3 p-4 bg-primary/10 rounded-lg border-2 border-primary/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                    <p className="text-sm font-semibold text-primary">Opções para pagamento em dinheiro</p>
+                  </div>
                   <div>
                     <Label className="text-base font-semibold">Precisa de troco?</Label>
                     <Select 
                       value={needsChange ? "sim" : "nao"} 
                       onValueChange={(value) => {
+                        console.log("Troco selecionado:", value);
                         setNeedsChange(value === "sim");
                         if (value === "nao") setChangeAmount("");
                       }}
@@ -458,7 +471,7 @@ const PublicStore = () => {
                       <SelectTrigger className="mt-2">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-background z-50">
                         <SelectItem value="nao">Não, tenho o valor exato</SelectItem>
                         <SelectItem value="sim">Sim, preciso de troco</SelectItem>
                       </SelectContent>
