@@ -493,13 +493,17 @@ const PublicStore = () => {
 
       <div className="container mx-auto py-8 px-4">
         {!isAuthenticated && (
-          <Card className="mb-6 border-primary">
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground mb-4">
-                Faça login ou crie uma conta para adicionar produtos ao carrinho
-              </p>
-              <Button onClick={() => setAuthModalOpen(true)} className="w-full">
-                Entrar / Cadastrar
+          <Card className="mb-6 border-primary bg-primary/5">
+            <CardContent className="pt-6 text-center">
+              <div className="mb-4">
+                <ShoppingCart className="h-12 w-12 mx-auto text-primary mb-2" />
+                <h3 className="font-semibold text-lg mb-2">Bem-vindo!</h3>
+                <p className="text-muted-foreground">
+                  Para fazer seu pedido, entre com seu WhatsApp ou crie uma conta rapidamente
+                </p>
+              </div>
+              <Button onClick={() => setAuthModalOpen(true)} size="lg" className="w-full">
+                Entrar / Criar Conta
               </Button>
             </CardContent>
           </Card>
