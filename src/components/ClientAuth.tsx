@@ -9,8 +9,7 @@ import { z } from "zod";
 
 const clientAuthSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  email: z.string().email("Email inválido"),
-  phone: z.string().min(10, "Telefone inválido"),
+  phone: z.string().regex(/^(\d{10,11})$/, "WhatsApp inválido. Use apenas números (ex: 85999999999)"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
 
@@ -26,7 +25,6 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
     phone: "",
     password: "",
   });
@@ -37,13 +35,37 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
 
     try {
       if (isLogin) {
-        // Login
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
+        // Login - buscar cliente pelo WhatsApp
+        const { data: clientData, error: clientError } = await supabase
+          .from("clients")
+          .select("user_id, email")
+          .eq("phone", formData.phone)
+          .eq("restaurant_id", restaurantId)
+          .maybeSingle();
+
+        if (clientError) throw clientError;
+
+        if (!clientData) {
+          toast.error("WhatsApp não encontrado. Faça seu cadastro primeiro.");
+          setLoading(false);
+          return;
+        }
+
+        // Login usando o email vinculado
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: clientData.email,
           password: formData.password,
         });
 
-        if (authError) throw authError;
+        if (authError) {
+          if (authError.message.includes("Invalid login credentials")) {
+            toast.error("Senha incorreta. Tente novamente.");
+          } else {
+            throw authError;
+          }
+          setLoading(false);
+          return;
+        }
 
         toast.success("Login realizado com sucesso!");
         onSuccess();
@@ -56,22 +78,51 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
           return;
         }
 
+        // Verificar se WhatsApp já está cadastrado
+        const { data: existingClient } = await supabase
+          .from("clients")
+          .select("id")
+          .eq("phone", formData.phone)
+          .eq("restaurant_id", restaurantId)
+          .maybeSingle();
+
+        if (existingClient) {
+          toast.error("Este WhatsApp já está cadastrado. Faça login.");
+          setLoading(false);
+          return;
+        }
+
+        // Criar email único baseado no telefone (formato: phone@restaurant-id.app)
+        const uniqueEmail = `${formData.phone}@${restaurantId.substring(0, 8)}.app`;
+
         // Criar usuário no auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: formData.email,
+          email: uniqueEmail,
           password: formData.password,
           options: {
             emailRedirectTo: `${window.location.origin}/r/${restaurantId}`,
+            data: {
+              phone: formData.phone,
+              name: formData.name,
+            },
           },
         });
 
-        if (authError) throw authError;
+        if (authError) {
+          if (authError.message.includes("already registered")) {
+            toast.error("Erro ao criar conta. Este número pode já estar em uso.");
+          } else {
+            throw authError;
+          }
+          setLoading(false);
+          return;
+        }
 
         if (authData.user) {
           // Criar cliente
           const { error: clientError } = await supabase.from("clients").insert({
             name: formData.name,
-            email: formData.email,
+            email: uniqueEmail,
             phone: formData.phone,
             restaurant_id: restaurantId,
             user_id: authData.user.id,
@@ -79,7 +130,7 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
 
           if (clientError) throw clientError;
 
-          toast.success("Cadastro realizado com sucesso!");
+          toast.success("Cadastro realizado! Você já está logado.");
           onSuccess();
         }
       }
@@ -100,39 +151,36 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
-            <>
-              <div>
-                <Label htmlFor="name">Nome Completo</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  required
-                />
-              </div>
-            </>
+            <div>
+              <Label htmlFor="name">Nome Completo</Label>
+              <Input
+                id="name"
+                placeholder="Digite seu nome"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </div>
           )}
 
           <div>
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="phone">WhatsApp (apenas números)</Label>
             <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              id="phone"
+              type="tel"
+              placeholder="85999999999"
+              value={formData.phone}
+              onChange={(e) => {
+                // Remove tudo que não for número
+                const numbers = e.target.value.replace(/\D/g, "");
+                setFormData({ ...formData, phone: numbers });
+              }}
+              maxLength={11}
               required
             />
+            <p className="text-xs text-muted-foreground mt-1">
+              Exemplo: 85999999999 (DDD + número)
+            </p>
           </div>
 
           <div>
@@ -140,6 +188,7 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
             <Input
               id="password"
               type="password"
+              placeholder="Mínimo 6 caracteres"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
