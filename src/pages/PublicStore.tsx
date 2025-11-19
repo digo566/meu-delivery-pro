@@ -88,6 +88,7 @@ const PublicStore = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state changed:", event, session?.user ? "Logado" : "Deslogado");
         if (session?.user) {
           setIsAuthenticated(true);
           // Use setTimeout to avoid blocking the auth state change
@@ -110,13 +111,17 @@ const PublicStore = () => {
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log("Verificando sessão:", session?.user ? "Usuário logado" : "Sem sessão");
       if (session?.user) {
         setIsAuthenticated(true);
         await loadClientData(session.user.id);
         await loadOrCreateCart(session.user.id);
+      } else {
+        setIsAuthenticated(false);
       }
     } catch (error) {
       console.error("Erro ao verificar autenticação:", error);
+      setIsAuthenticated(false);
     }
   };
 
@@ -524,6 +529,19 @@ const PublicStore = () => {
           </div>
         ) : (
           <>
+            {clientData && (
+              <div className="mb-4 flex items-center justify-between bg-muted p-4 rounded-lg">
+                <div>
+                  <p className="text-sm text-muted-foreground">Você está logado como</p>
+                  <p className="font-semibold">{clientData.name} - {clientData.phone}</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sair
+                </Button>
+              </div>
+            )}
+            
             <h2 className="text-2xl font-bold mb-6">Nosso Cardápio</h2>
             {products.length === 0 ? (
               <Card>
