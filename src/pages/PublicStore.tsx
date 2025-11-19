@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Minus, ShoppingCart, Store, Trash2, User } from "lucide-react";
+import { Plus, Minus, ShoppingCart, Store, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -42,7 +42,6 @@ interface RestaurantInfo {
 
 const PublicStore = () => {
   const { restaurantId } = useParams();
-  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,15 +54,6 @@ const PublicStore = () => {
   const [needsChange, setNeedsChange] = useState(false);
   const [changeAmount, setChangeAmount] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsLoggedIn(!!session);
-    };
-    checkAuth();
-  }, []);
 
   useEffect(() => {
     if (restaurantId) {
@@ -234,7 +224,7 @@ const PublicStore = () => {
 
       if (itemsError) throw itemsError;
 
-      toast.success("Pedido enviado com sucesso! Faça login para acompanhar seu pedido.");
+      toast.success("Pedido enviado com sucesso! O restaurante entrará em contato pelo WhatsApp.");
       setCart([]);
       setCustomerName("");
       setCustomerPhone("");
@@ -284,29 +274,11 @@ const PublicStore = () => {
                 <p className="text-sm text-muted-foreground">Faça seu pedido online</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              {isLoggedIn ? (
-                <Button
-                  variant="outline"
-                  onClick={() => navigate(`/my-orders?restaurantId=${restaurantId}`)}
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Meus Pedidos
-                </Button>
-              ) : (
-                <Button
-                  variant="outline"
-                  onClick={() => navigate(`/client-auth?restaurantId=${restaurantId}`)}
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Entrar
-                </Button>
-              )}
-              <Button
-                onClick={() => setCheckoutOpen(true)}
-                className="relative"
-                disabled={cart.length === 0}
-              >
+            <Button
+              onClick={() => setCheckoutOpen(true)}
+              className="relative"
+              disabled={cart.length === 0}
+            >
               <ShoppingCart className="w-4 h-4 mr-2" />
               Carrinho
               {cart.length > 0 && (
@@ -316,7 +288,6 @@ const PublicStore = () => {
               )}
             </Button>
           </div>
-        </div>
         </div>
       </header>
 
@@ -462,23 +433,28 @@ const PublicStore = () => {
                   </SelectContent>
                 </Select>
               </div>
+              
               {paymentMethod === "dinheiro" && (
-                <>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="needsChange"
-                      checked={needsChange}
-                      onChange={(e) => {
-                        setNeedsChange(e.target.checked);
-                        if (!e.target.checked) setChangeAmount("");
+                <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                  <div>
+                    <Label>Precisa de troco? *</Label>
+                    <Select 
+                      value={needsChange ? "sim" : "nao"} 
+                      onValueChange={(value) => {
+                        setNeedsChange(value === "sim");
+                        if (value === "nao") setChangeAmount("");
                       }}
-                      className="h-4 w-4"
-                    />
-                    <Label htmlFor="needsChange" className="cursor-pointer">
-                      Preciso de troco
-                    </Label>
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nao">Não</SelectItem>
+                        <SelectItem value="sim">Sim</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
+                  
                   {needsChange && (
                     <div>
                       <Label htmlFor="changeAmount">Troco para quanto? *</Label>
@@ -486,6 +462,7 @@ const PublicStore = () => {
                         id="changeAmount"
                         type="number"
                         step="0.01"
+                        min="0"
                         value={changeAmount}
                         onChange={(e) => setChangeAmount(e.target.value)}
                         placeholder="Ex: 50.00"
@@ -493,7 +470,7 @@ const PublicStore = () => {
                       />
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
           </div>
