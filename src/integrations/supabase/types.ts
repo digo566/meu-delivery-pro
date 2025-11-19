@@ -16,8 +16,10 @@ export type Database = {
     Tables: {
       clients: {
         Row: {
+          address: string | null
           created_at: string | null
           id: string
+          is_registered: boolean | null
           name: string
           notes: string | null
           phone: string
@@ -26,8 +28,10 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          address?: string | null
           created_at?: string | null
           id?: string
+          is_registered?: boolean | null
           name: string
           notes?: string | null
           phone: string
@@ -36,8 +40,10 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          address?: string | null
           created_at?: string | null
           id?: string
+          is_registered?: boolean | null
           name?: string
           notes?: string | null
           phone?: string
@@ -46,6 +52,41 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      interactions: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          id: string
+          message: string
+          restaurant_id: string
+          type: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+          restaurant_id: string
+          type: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          restaurant_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_items: {
         Row: {
@@ -96,7 +137,11 @@ export type Database = {
         Row: {
           client_id: string | null
           created_at: string | null
+          delivered_at: string | null
           id: string
+          payment_method: string | null
+          preparation_started_at: string | null
+          ready_at: string | null
           restaurant_id: string
           status: Database["public"]["Enums"]["order_status"] | null
           total_amount: number
@@ -105,7 +150,11 @@ export type Database = {
         Insert: {
           client_id?: string | null
           created_at?: string | null
+          delivered_at?: string | null
           id?: string
+          payment_method?: string | null
+          preparation_started_at?: string | null
+          ready_at?: string | null
           restaurant_id: string
           status?: Database["public"]["Enums"]["order_status"] | null
           total_amount: number
@@ -114,7 +163,11 @@ export type Database = {
         Update: {
           client_id?: string | null
           created_at?: string | null
+          delivered_at?: string | null
           id?: string
+          payment_method?: string | null
+          preparation_started_at?: string | null
+          ready_at?: string | null
           restaurant_id?: string
           status?: Database["public"]["Enums"]["order_status"] | null
           total_amount?: number
@@ -133,34 +186,40 @@ export type Database = {
       products: {
         Row: {
           available: boolean | null
+          cost_price: number | null
           created_at: string | null
           description: string | null
           id: string
           image_url: string | null
           name: string
           price: number
+          profit_margin: number | null
           restaurant_id: string
           updated_at: string | null
         }
         Insert: {
           available?: boolean | null
+          cost_price?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
           name: string
           price: number
+          profit_margin?: number | null
           restaurant_id: string
           updated_at?: string | null
         }
         Update: {
           available?: boolean | null
+          cost_price?: number | null
           created_at?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
           name?: string
           price?: number
+          profit_margin?: number | null
           restaurant_id?: string
           updated_at?: string | null
         }
@@ -168,22 +227,31 @@ export type Database = {
       }
       profiles: {
         Row: {
+          cover_url: string | null
           created_at: string | null
           id: string
+          logo_url: string | null
+          opening_hours: Json | null
           phone: string
           restaurant_name: string
           updated_at: string | null
         }
         Insert: {
+          cover_url?: string | null
           created_at?: string | null
           id: string
+          logo_url?: string | null
+          opening_hours?: Json | null
           phone: string
           restaurant_name: string
           updated_at?: string | null
         }
         Update: {
+          cover_url?: string | null
           created_at?: string | null
           id?: string
+          logo_url?: string | null
+          opening_hours?: Json | null
           phone?: string
           restaurant_name?: string
           updated_at?: string | null
