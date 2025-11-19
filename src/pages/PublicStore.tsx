@@ -67,16 +67,34 @@ const PublicStore = () => {
     if (restaurantId) {
       loadStoreData();
       checkAuth();
+      
+      // Safety timeout - force loading to false after 10 seconds
+      const timeout = setTimeout(() => {
+        if (loading) {
+          console.error("Timeout: forçando fim do loading");
+          setLoading(false);
+          if (!restaurantInfo) {
+            toast.error("Tempo limite excedido ao carregar a loja");
+          }
+        }
+      }, 10000);
+
+      return () => clearTimeout(timeout);
     }
   }, [restaurantId]);
 
   useEffect(() => {
+    if (!restaurantId) return;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         if (session?.user) {
           setIsAuthenticated(true);
-          await loadClientData(session.user.id);
-          await loadOrCreateCart(session.user.id);
+          // Use setTimeout to avoid blocking the auth state change
+          setTimeout(() => {
+            loadClientData(session.user.id);
+            loadOrCreateCart(session.user.id);
+          }, 0);
         } else {
           setIsAuthenticated(false);
           setClientData(null);
@@ -90,11 +108,15 @@ const PublicStore = () => {
   }, [restaurantId]);
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
-      setIsAuthenticated(true);
-      await loadClientData(session.user.id);
-      await loadOrCreateCart(session.user.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setIsAuthenticated(true);
+        await loadClientData(session.user.id);
+        await loadOrCreateCart(session.user.id);
+      }
+    } catch (error) {
+      console.error("Erro ao verificar autenticação:", error);
     }
   };
 
@@ -188,20 +210,27 @@ const PublicStore = () => {
 
   const loadStoreData = async () => {
     try {
+      console.log("Carregando dados da loja para restaurantId:", restaurantId);
+      
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
         .select("restaurant_name, phone")
         .eq("id", restaurantId)
         .maybeSingle();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error("Erro ao carregar perfil:", profileError);
+        throw profileError;
+      }
       
       if (!profileData) {
+        console.warn("Restaurante não encontrado");
         setRestaurantInfo(null);
         setLoading(false);
         return;
       }
       
+      console.log("Restaurante encontrado:", profileData);
       setRestaurantInfo(profileData);
 
       const { data: productsData, error: productsError } = await supabase
@@ -211,9 +240,15 @@ const PublicStore = () => {
         .eq("available", true)
         .order("created_at", { ascending: false });
 
-      if (productsError) throw productsError;
+      if (productsError) {
+        console.error("Erro ao carregar produtos:", productsError);
+        throw productsError;
+      }
+      
+      console.log("Produtos carregados:", productsData?.length || 0);
       setProducts(productsData || []);
     } catch (error: any) {
+      console.error("Erro geral ao carregar dados:", error);
       toast.error("Erro ao carregar dados da loja");
     } finally {
       setLoading(false);
