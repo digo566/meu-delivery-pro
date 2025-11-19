@@ -11,7 +11,8 @@ import {
   Users, 
   LogOut,
   Menu,
-  Store
+  Store,
+  ShoppingCart
 } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -61,6 +62,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { to: "/products", icon: Package, label: "Produtos" },
     { to: "/orders", icon: ShoppingBag, label: "Pedidos" },
     { to: "/customers", icon: Users, label: "Clientes" },
+    { to: "/abandoned-carts", icon: ShoppingCart, label: "Carrinhos Abandonados" },
   ];
 
   const NavItems = () => (

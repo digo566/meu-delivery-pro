@@ -14,6 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      cart_items: {
+        Row: {
+          cart_id: string
+          created_at: string | null
+          id: string
+          product_id: string
+          quantity: number
+        }
+        Insert: {
+          cart_id: string
+          created_at?: string | null
+          id?: string
+          product_id: string
+          quantity?: number
+        }
+        Update: {
+          cart_id?: string
+          created_at?: string | null
+          id?: string
+          product_id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_items_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      carts: {
+        Row: {
+          abandoned_at: string | null
+          client_id: string
+          contacted: boolean | null
+          created_at: string | null
+          id: string
+          is_abandoned: boolean | null
+          restaurant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          abandoned_at?: string | null
+          client_id: string
+          contacted?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_abandoned?: boolean | null
+          restaurant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          abandoned_at?: string | null
+          client_id?: string
+          contacted?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_abandoned?: boolean | null
+          restaurant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
@@ -23,6 +103,7 @@ export type Database = {
           is_registered: boolean | null
           name: string
           notes: string | null
+          password_hash: string | null
           phone: string
           restaurant_id: string
           tags: string[] | null
@@ -37,6 +118,7 @@ export type Database = {
           is_registered?: boolean | null
           name: string
           notes?: string | null
+          password_hash?: string | null
           phone: string
           restaurant_id: string
           tags?: string[] | null
@@ -51,6 +133,7 @@ export type Database = {
           is_registered?: boolean | null
           name?: string
           notes?: string | null
+          password_hash?: string | null
           phone?: string
           restaurant_id?: string
           tags?: string[] | null
@@ -141,6 +224,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          cart_id: string | null
           change_amount: number | null
           client_id: string | null
           created_at: string | null
@@ -156,6 +240,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          cart_id?: string | null
           change_amount?: number | null
           client_id?: string | null
           created_at?: string | null
@@ -171,6 +256,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          cart_id?: string | null
           change_amount?: number | null
           client_id?: string | null
           created_at?: string | null
@@ -186,6 +272,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_cart_id_fkey"
+            columns: ["cart_id"]
+            isOneToOne: false
+            referencedRelation: "carts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_client_id_fkey"
             columns: ["client_id"]
@@ -303,6 +396,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_abandoned_carts: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "restaurant"
