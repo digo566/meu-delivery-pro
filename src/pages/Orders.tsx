@@ -20,6 +20,7 @@ interface Order {
   clients: {
     name: string;
     phone: string;
+    address: string | null;
   } | null;
   order_items: {
     quantity: number;
@@ -47,7 +48,7 @@ const Orders = () => {
         .from("orders")
         .select(`
           *,
-          clients(name, phone),
+          clients(name, phone, address),
           order_items(quantity, unit_price, products(name))
         `)
         .eq("restaurant_id", user.id)
@@ -139,6 +140,13 @@ const Orders = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {order.clients?.address && (
+                    <div className="space-y-1 pb-2 border-b">
+                      <p className="text-sm text-muted-foreground">Endereço de Entrega</p>
+                      <p className="text-sm font-medium">{order.clients.address}</p>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <h4 className="font-semibold text-sm">Itens do Pedido:</h4>
                     <div className="space-y-1">
