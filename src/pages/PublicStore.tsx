@@ -18,8 +18,14 @@ const customerSchema = z.object({
   phone: z.string().trim().regex(/^(\+55\d{10,11}|\(\d{2}\)\s?\d{4,5}-?\d{4}|\d{10,11})$/, "Telefone inválido. Use formato brasileiro: (11) 99999-9999"),
   address: z.string().trim().min(10, "Endereço deve ter no mínimo 10 caracteres").max(500, "Endereço muito longo"),
   paymentMethod: z.string().min(1, "Selecione uma forma de pagamento"),
-  needsChange: z.boolean().optional(),
-  changeAmount: z.string().optional(),
+}).refine((data) => {
+  // Se for dinheiro e precisa de troco, validar o valor do troco
+  if (data.paymentMethod === "dinheiro") {
+    return true; // Sempre válido, troco é opcional
+  }
+  return true;
+}, {
+  message: "Dados de pagamento incompletos",
 });
 
 interface Product {
@@ -134,13 +140,17 @@ const PublicStore = () => {
       return;
     }
 
+    // Validar troco se for dinheiro e marcou que precisa
+    if (paymentMethod === "dinheiro" && needsChange && !changeAmount) {
+      toast.error("Informe o valor do troco");
+      return;
+    }
+
     const validation = customerSchema.safeParse({
       name: customerName,
       phone: customerPhone,
       address: customerAddress,
       paymentMethod: paymentMethod,
-      needsChange: needsChange,
-      changeAmount: changeAmount,
     });
 
     if (!validation.success) {
@@ -201,8 +211,8 @@ const PublicStore = () => {
           total_amount: getCartTotal(),
           status: "pending",
           payment_method: validation.data.paymentMethod,
-          needs_change: validation.data.needsChange || false,
-          change_amount: validation.data.changeAmount ? parseFloat(validation.data.changeAmount) : null,
+          needs_change: needsChange,
+          change_amount: changeAmount ? parseFloat(changeAmount) : null,
         })
         .select("id")
         .single();
@@ -435,9 +445,9 @@ const PublicStore = () => {
               </div>
               
               {paymentMethod === "dinheiro" && (
-                <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                <div className="space-y-3 p-4 bg-muted/50 rounded-lg border-2">
                   <div>
-                    <Label>Precisa de troco? *</Label>
+                    <Label className="text-base font-semibold">Precisa de troco?</Label>
                     <Select 
                       value={needsChange ? "sim" : "nao"} 
                       onValueChange={(value) => {
@@ -445,19 +455,21 @@ const PublicStore = () => {
                         if (value === "nao") setChangeAmount("");
                       }}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="nao">Não</SelectItem>
-                        <SelectItem value="sim">Sim</SelectItem>
+                        <SelectItem value="nao">Não, tenho o valor exato</SelectItem>
+                        <SelectItem value="sim">Sim, preciso de troco</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   
                   {needsChange && (
-                    <div>
-                      <Label htmlFor="changeAmount">Troco para quanto? *</Label>
+                    <div className="animate-in fade-in-50 duration-200">
+                      <Label htmlFor="changeAmount" className="text-base font-semibold">
+                        Troco para quanto?
+                      </Label>
                       <Input
                         id="changeAmount"
                         type="number"
@@ -466,8 +478,12 @@ const PublicStore = () => {
                         value={changeAmount}
                         onChange={(e) => setChangeAmount(e.target.value)}
                         placeholder="Ex: 50.00"
+                        className="mt-2"
                         required
                       />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Informe o valor da nota para calcularmos o troco
+                      </p>
                     </div>
                   )}
                 </div>
