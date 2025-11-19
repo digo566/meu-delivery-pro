@@ -14,6 +14,9 @@ interface Order {
   total_amount: number;
   status: string;
   created_at: string;
+  payment_method: string | null;
+  needs_change: boolean | null;
+  change_amount: number | null;
   clients: {
     name: string;
     phone: string;
@@ -149,6 +152,20 @@ const Orders = () => {
                       ))}
                     </div>
                   </div>
+
+                  {order.payment_method && (
+                    <div className="space-y-1 pt-2 border-t">
+                      <p className="text-sm text-muted-foreground">Forma de Pagamento</p>
+                      <p className="text-sm font-medium capitalize">
+                        {order.payment_method}
+                        {order.payment_method === "dinheiro" && order.needs_change && order.change_amount && (
+                          <span className="text-muted-foreground">
+                            {" "}• Troco para R$ {Number(order.change_amount).toFixed(2)}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between pt-4 border-t">
                     <div className="space-y-1">

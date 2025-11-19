@@ -25,6 +25,8 @@ interface Order {
   total_amount: number;
   status: string;
   payment_method: string | null;
+  needs_change: boolean | null;
+  change_amount: number | null;
   order_items: OrderItem[];
   clients: {
     address: string | null;
@@ -204,6 +206,12 @@ export default function MyOrders() {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Forma de pagamento:</span>
                         <span className="capitalize">{order.payment_method}</span>
+                      </div>
+                    )}
+                    {order.payment_method === "dinheiro" && order.needs_change && order.change_amount && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Troco para:</span>
+                        <span>R$ {Number(order.change_amount).toFixed(2)}</span>
                       </div>
                     )}
                     {order.clients.address && (

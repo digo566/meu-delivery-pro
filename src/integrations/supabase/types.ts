@@ -141,10 +141,12 @@ export type Database = {
       }
       orders: {
         Row: {
+          change_amount: number | null
           client_id: string | null
           created_at: string | null
           delivered_at: string | null
           id: string
+          needs_change: boolean | null
           payment_method: string | null
           preparation_started_at: string | null
           ready_at: string | null
@@ -154,10 +156,12 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          change_amount?: number | null
           client_id?: string | null
           created_at?: string | null
           delivered_at?: string | null
           id?: string
+          needs_change?: boolean | null
           payment_method?: string | null
           preparation_started_at?: string | null
           ready_at?: string | null
@@ -167,10 +171,12 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          change_amount?: number | null
           client_id?: string | null
           created_at?: string | null
           delivered_at?: string | null
           id?: string
+          needs_change?: boolean | null
           payment_method?: string | null
           preparation_started_at?: string | null
           ready_at?: string | null
