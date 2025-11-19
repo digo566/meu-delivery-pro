@@ -45,7 +45,15 @@ const Dashboard = () => {
       
       setUserId(user.id);
 
-      // Buscar pedidos
+      // Buscar TODOS os pedidos para estatísticas
+      const { data: allOrders, error: statsError } = await supabase
+        .from("orders")
+        .select("total_amount")
+        .eq("restaurant_id", user.id);
+
+      if (statsError) throw statsError;
+
+      // Buscar pedidos recentes para exibição
       const { data: orders, error: ordersError } = await supabase
         .from("orders")
         .select("*, clients(name), order_items(quantity, product_id, products(name))")
@@ -55,9 +63,9 @@ const Dashboard = () => {
 
       if (ordersError) throw ordersError;
 
-      // Calcular estatísticas
-      const totalOrders = orders?.length || 0;
-      const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
+      // Calcular estatísticas com TODOS os pedidos
+      const totalOrders = allOrders?.length || 0;
+      const totalRevenue = allOrders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
       const averageTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
       setStats({

@@ -343,7 +343,7 @@ const PublicStore = () => {
       </main>
 
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Finalizar Pedido</DialogTitle>
             <DialogDescription>
