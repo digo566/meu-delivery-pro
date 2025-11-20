@@ -50,9 +50,38 @@ const PublicStore = () => {
     }
   }, [restaurantId]);
 
+  // Limpar carrinho ao sair da página
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (guestCartId && restaurantId) {
+        localStorage.removeItem(`cartItems_${guestCartId}`);
+        localStorage.removeItem(`guestCart_${restaurantId}`);
+        localStorage.removeItem(`cartTimestamp_${restaurantId}`);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [guestCartId, restaurantId]);
+
   const loadGuestCart = () => {
     const savedCartId = localStorage.getItem(`guestCart_${restaurantId}`);
-    if (savedCartId) {
+    const savedTimestamp = localStorage.getItem(`cartTimestamp_${restaurantId}`);
+    
+    if (savedCartId && savedTimestamp) {
+      const lastActivity = parseInt(savedTimestamp);
+      const tenMinutes = 10 * 60 * 1000; // 10 minutos em ms
+      const now = Date.now();
+      
+      // Verificar se passaram 10 minutos
+      if (now - lastActivity > tenMinutes) {
+        // Expirou - limpar tudo
+        localStorage.removeItem(`cartItems_${savedCartId}`);
+        localStorage.removeItem(`guestCart_${restaurantId}`);
+        localStorage.removeItem(`cartTimestamp_${restaurantId}`);
+        return;
+      }
+      
       setGuestCartId(savedCartId);
       const savedItems = localStorage.getItem(`cartItems_${savedCartId}`);
       if (savedItems) {
@@ -101,6 +130,7 @@ const PublicStore = () => {
     const tempCartId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     setGuestCartId(tempCartId);
     localStorage.setItem(`guestCart_${restaurantId}`, tempCartId);
+    localStorage.setItem(`cartTimestamp_${restaurantId}`, Date.now().toString());
     return tempCartId;
   };
 
@@ -145,6 +175,8 @@ const PublicStore = () => {
 
     setCart(updatedCart);
     localStorage.setItem(`cartItems_${cartId}`, JSON.stringify(updatedCart));
+    // Atualizar timestamp de última atividade
+    localStorage.setItem(`cartTimestamp_${restaurantId}`, Date.now().toString());
     setOptionsDialogOpen(false);
     setCartModalOpen(true);
     toast.success("Produto adicionado ao carrinho!");
