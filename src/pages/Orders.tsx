@@ -17,6 +17,7 @@ interface Order {
   payment_method: string | null;
   needs_change: boolean | null;
   change_amount: number | null;
+  notes: string | null;
   clients: {
     name: string;
     phone: string;
@@ -171,6 +172,15 @@ const Orders = () => {
                             {" "}• Troco para R$ {Number(order.change_amount).toFixed(2)}
                           </span>
                         )}
+                      </p>
+                    </div>
+                  )}
+
+                  {order.notes && (
+                    <div className="space-y-1 pt-2 border-t">
+                      <p className="text-sm text-muted-foreground">Observações do Cliente</p>
+                      <p className="text-sm font-medium bg-muted p-2 rounded-md">
+                        {order.notes}
                       </p>
                     </div>
                   )}

@@ -177,6 +177,48 @@ export type Database = {
           },
         ]
       }
+      order_item_options: {
+        Row: {
+          created_at: string | null
+          id: string
+          option_item_id: string
+          option_item_name: string
+          order_item_id: string
+          price_modifier: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          option_item_id: string
+          option_item_name: string
+          order_item_id: string
+          price_modifier?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          option_item_id?: string
+          option_item_name?: string
+          order_item_id?: string
+          price_modifier?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_item_options_option_item_id_fkey"
+            columns: ["option_item_id"]
+            isOneToOne: false
+            referencedRelation: "product_option_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_item_options_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string | null
@@ -231,6 +273,7 @@ export type Database = {
           delivered_at: string | null
           id: string
           needs_change: boolean | null
+          notes: string | null
           payment_method: string | null
           preparation_started_at: string | null
           ready_at: string | null
@@ -247,6 +290,7 @@ export type Database = {
           delivered_at?: string | null
           id?: string
           needs_change?: boolean | null
+          notes?: string | null
           payment_method?: string | null
           preparation_started_at?: string | null
           ready_at?: string | null
@@ -263,6 +307,7 @@ export type Database = {
           delivered_at?: string | null
           id?: string
           needs_change?: boolean | null
+          notes?: string | null
           payment_method?: string | null
           preparation_started_at?: string | null
           ready_at?: string | null
@@ -284,6 +329,79 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_option_groups: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_required: boolean | null
+          max_selections: number | null
+          min_selections: number | null
+          name: string
+          product_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_required?: boolean | null
+          max_selections?: number | null
+          min_selections?: number | null
+          name: string
+          product_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_required?: boolean | null
+          max_selections?: number | null
+          min_selections?: number | null
+          name?: string
+          product_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_option_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_option_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          option_group_id: string
+          price_modifier: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          option_group_id: string
+          price_modifier?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          option_group_id?: string
+          price_modifier?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_option_items_option_group_id_fkey"
+            columns: ["option_group_id"]
+            isOneToOne: false
+            referencedRelation: "product_option_groups"
             referencedColumns: ["id"]
           },
         ]
