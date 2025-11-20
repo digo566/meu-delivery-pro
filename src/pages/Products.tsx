@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ImageUpload } from "@/components/ImageUpload";
+import { ProductOptionsManager } from "@/components/ProductOptionsManager";
 
 interface Product {
   id: string;
@@ -280,7 +281,7 @@ const Products = () => {
                   <CardDescription>{product.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-4">
                     <p className="text-2xl font-bold text-primary">
                       R$ {product.price.toFixed(2)}
                     </p>
@@ -301,6 +302,10 @@ const Products = () => {
                       </Button>
                     </div>
                   </div>
+                  <ProductOptionsManager
+                    productId={product.id}
+                    productName={product.name}
+                  />
                 </CardContent>
               </Card>
             ))

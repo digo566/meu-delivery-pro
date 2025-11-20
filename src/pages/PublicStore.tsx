@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { ShoppingCart, Store } from "lucide-react";
 import { toast } from "sonner";
 import { CartModal } from "@/components/CartModal";
+import { ProductOptionsDialog } from "@/components/ProductOptionsDialog";
 
 interface Product {
   id: string;
@@ -18,6 +19,12 @@ interface Product {
 
 interface CartItem extends Product {
   quantity: number;
+  selectedOptions?: {
+    optionItemId: string;
+    optionItemName: string;
+    priceModifier: number;
+  }[];
+  finalPrice: number;
 }
 
 interface RestaurantInfo {
@@ -31,6 +38,8 @@ const PublicStore = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [cartModalOpen, setCartModalOpen] = useState(false);
+  const [optionsDialogOpen, setOptionsDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [restaurantInfo, setRestaurantInfo] = useState<RestaurantInfo | null>(null);
   const [guestCartId, setGuestCartId] = useState<string | null>(null);
 
@@ -95,28 +104,48 @@ const PublicStore = () => {
     return tempCartId;
   };
 
-  const addToCart = (product: Product) => {
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product);
+    setOptionsDialogOpen(true);
+  };
+
+  const handleOptionsConfirm = (
+    selectedOptions: { optionItemId: string; optionItemName: string; priceModifier: number }[],
+    finalPrice: number
+  ) => {
+    if (!selectedProduct) return;
+
     let cartId = guestCartId;
     
     if (!cartId) {
       cartId = createGuestCart();
     }
 
-    const existingItem = cart.find(item => item.id === product.id);
+    const existingItem = cart.find(
+      item => item.id === selectedProduct.id && 
+      JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions)
+    );
 
     let updatedCart: CartItem[];
     if (existingItem) {
       updatedCart = cart.map(item =>
-        item.id === product.id
+        item.id === selectedProduct.id && 
+        JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions)
           ? { ...item, quantity: item.quantity + 1 }
           : item
       );
     } else {
-      updatedCart = [...cart, { ...product, quantity: 1 }];
+      updatedCart = [...cart, { 
+        ...selectedProduct, 
+        quantity: 1, 
+        selectedOptions,
+        finalPrice 
+      }];
     }
 
     setCart(updatedCart);
     localStorage.setItem(`cartItems_${cartId}`, JSON.stringify(updatedCart));
+    setOptionsDialogOpen(false);
     setCartModalOpen(true);
     toast.success("Produto adicionado ao carrinho!");
   };
@@ -213,7 +242,7 @@ const PublicStore = () => {
                     <span className="text-xl font-bold text-primary">
                       R$ {product.price.toFixed(2)}
                     </span>
-                    <Button onClick={() => addToCart(product)}>
+                    <Button onClick={() => handleProductClick(product)}>
                       <ShoppingCart className="h-4 w-4 mr-2" />
                       Adicionar
                     </Button>
@@ -225,6 +254,20 @@ const PublicStore = () => {
         )}
       </main>
 
+      {selectedProduct && (
+        <ProductOptionsDialog
+          isOpen={optionsDialogOpen}
+          onClose={() => {
+            setOptionsDialogOpen(false);
+            setSelectedProduct(null);
+          }}
+          onConfirm={handleOptionsConfirm}
+          productId={selectedProduct.id}
+          productName={selectedProduct.name}
+          basePrice={selectedProduct.price}
+        />
+      )}
+
       <CartModal
         isOpen={cartModalOpen}
         onClose={() => setCartModalOpen(false)}
@@ -233,8 +276,9 @@ const PublicStore = () => {
         items={cart.map(item => ({
           id: item.id,
           name: item.name,
-          price: item.price,
+          price: item.finalPrice || item.price,
           quantity: item.quantity,
+          selectedOptions: item.selectedOptions,
         }))}
         restaurantId={restaurantId!}
         guestCartId={guestCartId}

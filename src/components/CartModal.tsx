@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
 import { z } from "zod";
 
 interface CartItem {
@@ -43,6 +44,7 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
     paymentMethod: "",
     needsChange: false,
     changeAmount: "",
+    notes: "",
   });
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -185,6 +187,7 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
           payment_method: formData.paymentMethod,
           needs_change: formData.needsChange,
           change_amount: formData.needsChange && formData.changeAmount ? parseFloat(formData.changeAmount) : null,
+          notes: formData.notes || null,
         });
 
       if (orderError) throw orderError;
@@ -204,6 +207,7 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
         paymentMethod: "",
         needsChange: false,
         changeAmount: "",
+        notes: "",
       });
       onClose();
       
@@ -298,6 +302,17 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Observações (Opcional)</Label>
+              <Textarea
+                id="notes"
+                placeholder="Ex: Sem cebola, ponto da carne mal passada, etc."
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
               />
             </div>
 
