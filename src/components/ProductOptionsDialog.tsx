@@ -48,12 +48,24 @@ export function ProductOptionsDialog({
   const [optionGroups, setOptionGroups] = useState<ProductOptionGroup[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
+  const [autoConfirmed, setAutoConfirmed] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
+      setAutoConfirmed(false);
+      setSelectedOptions({});
       loadOptions();
     }
   }, [isOpen, productId]);
+
+  // Auto-confirmar quando não há opções
+  useEffect(() => {
+    if (!loading && optionGroups.length === 0 && isOpen && !autoConfirmed) {
+      setAutoConfirmed(true);
+      onConfirm([], basePrice);
+      onClose();
+    }
+  }, [loading, optionGroups, isOpen, autoConfirmed, basePrice, onConfirm, onClose]);
 
   const loadOptions = async () => {
     setLoading(true);
@@ -143,7 +155,7 @@ export function ProductOptionsDialog({
     onConfirm(selected, calculateTotal());
   };
 
-  if (loading) {
+  if (loading || optionGroups.length === 0) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent>
@@ -153,14 +165,6 @@ export function ProductOptionsDialog({
         </DialogContent>
       </Dialog>
     );
-  }
-
-  // Se não há opções, confirma direto
-  if (optionGroups.length === 0) {
-    setTimeout(() => {
-      onConfirm([], basePrice);
-    }, 0);
-    return null;
   }
 
   return (
