@@ -280,6 +280,7 @@ export type Database = {
           restaurant_id: string
           status: Database["public"]["Enums"]["order_status"] | null
           total_amount: number
+          tracking_code: string | null
           updated_at: string | null
         }
         Insert: {
@@ -297,6 +298,7 @@ export type Database = {
           restaurant_id: string
           status?: Database["public"]["Enums"]["order_status"] | null
           total_amount: number
+          tracking_code?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -314,6 +316,7 @@ export type Database = {
           restaurant_id?: string
           status?: Database["public"]["Enums"]["order_status"] | null
           total_amount?: number
+          tracking_code?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -507,6 +510,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_tracking_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -524,6 +528,7 @@ export type Database = {
         | "ready"
         | "delivered"
         | "cancelled"
+        | "on_the_way"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -652,7 +657,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "restaurant"],
-      order_status: ["pending", "preparing", "ready", "delivered", "cancelled"],
+      order_status: [
+        "pending",
+        "preparing",
+        "ready",
+        "delivered",
+        "cancelled",
+        "on_the_way",
+      ],
     },
   },
 } as const

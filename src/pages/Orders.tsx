@@ -11,6 +11,7 @@ import { ptBR } from "date-fns/locale";
 
 interface Order {
   id: string;
+  tracking_code: string;
   total_amount: number;
   status: string;
   created_at: string;
@@ -82,6 +83,7 @@ const Orders = () => {
   const statusColors: Record<string, string> = {
     pending: "bg-yellow-500",
     preparing: "bg-blue-500",
+    on_the_way: "bg-purple-500",
     ready: "bg-green-500",
     delivered: "bg-gray-500",
     cancelled: "bg-red-500",
@@ -90,6 +92,7 @@ const Orders = () => {
   const statusLabels: Record<string, string> = {
     pending: "Pendente",
     preparing: "Em Preparo",
+    on_the_way: "A Caminho",
     ready: "Pronto",
     delivered: "Entregue",
     cancelled: "Cancelado",
@@ -127,13 +130,18 @@ const Orders = () => {
               <Card key={order.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="space-y-1">
                       <CardTitle className="text-lg">
                         {order.clients?.name || "Cliente não identificado"}
                       </CardTitle>
                       <CardDescription>
                         {format(new Date(order.created_at), "PPpp", { locale: ptBR })}
                       </CardDescription>
+                      <div className="pt-1">
+                        <code className="text-xs bg-muted px-2 py-1 rounded border">
+                          Código: {order.tracking_code}
+                        </code>
+                      </div>
                     </div>
                     <Badge className={statusColors[order.status]}>
                       {statusLabels[order.status]}
@@ -202,6 +210,7 @@ const Orders = () => {
                       <SelectContent>
                         <SelectItem value="pending">Pendente</SelectItem>
                         <SelectItem value="preparing">Em Preparo</SelectItem>
+                        <SelectItem value="on_the_way">A Caminho</SelectItem>
                         <SelectItem value="ready">Pronto</SelectItem>
                         <SelectItem value="delivered">Entregue</SelectItem>
                         <SelectItem value="cancelled">Cancelado</SelectItem>
