@@ -37,9 +37,10 @@ const checkoutSchema = z.object({
 });
 
 export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, restaurantId, guestCartId }: CartModalProps) {
-  const [step, setStep] = useState<'cart' | 'data' | 'payment'>('cart');
+  const [step, setStep] = useState<'cart' | 'data' | 'payment' | 'success'>('cart');
   const [loading, setLoading] = useState(false);
   const [savedCartId, setSavedCartId] = useState<string | null>(null);
+  const [trackingCode, setTrackingCode] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -182,7 +183,7 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
       if (!cart) throw new Error("Carrinho não encontrado");
 
       // Criar pedido
-      const { error: orderError } = await supabase
+      const { data: newOrder, error: orderError } = await supabase
         .from("orders")
         .insert({
           cart_id: savedCartId,
@@ -194,9 +195,14 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
           needs_change: formData.needsChange,
           change_amount: formData.needsChange && formData.changeAmount ? parseFloat(formData.changeAmount) : null,
           notes: formData.notes || null,
-        });
+        })
+        .select("tracking_code")
+        .single();
 
       if (orderError) throw orderError;
+
+      // Salvar código de rastreamento
+      setTrackingCode(newOrder?.tracking_code || null);
 
       // Limpar carrinho local
       if (guestCartId) {
@@ -205,22 +211,7 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
       }
 
       toast.success("Pedido realizado com sucesso!");
-      setStep('cart');
-      setFormData({
-        name: "",
-        phone: "",
-        address: "",
-        paymentMethod: "",
-        needsChange: false,
-        changeAmount: "",
-        notes: "",
-      });
-      onClose();
-      
-      // Recarregar página após 1 segundo
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      setStep('success');
     } catch (error) {
       console.error("Erro ao processar pedido:", error);
       toast.error("Erro ao processar. Tente novamente.");
@@ -232,7 +223,24 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
   const getTitle = () => {
     if (step === 'data') return "Seus Dados para Entrega";
     if (step === 'payment') return "Forma de Pagamento";
+    if (step === 'success') return "Pedido Realizado!";
     return "Item Adicionado ao Carrinho";
+  };
+
+  const handleCloseSuccess = () => {
+    setStep('cart');
+    setFormData({
+      name: "",
+      phone: "",
+      address: "",
+      paymentMethod: "",
+      needsChange: false,
+      changeAmount: "",
+      notes: "",
+    });
+    setTrackingCode(null);
+    onClose();
+    window.location.reload();
   };
 
   return (
@@ -424,6 +432,58 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
                 className="w-full"
               >
                 Voltar
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 'success' && (
+          <div className="space-y-6 text-center">
+            <div className="flex justify-center">
+              <div className="rounded-full bg-green-100 p-3">
+                <svg
+                  className="h-12 w-12 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-semibold">Pedido Confirmado!</h3>
+              <p className="text-sm text-muted-foreground">
+                Seu pedido foi recebido e está sendo preparado
+              </p>
+            </div>
+
+            {trackingCode && (
+              <div className="space-y-3 p-4 bg-muted rounded-lg">
+                <p className="text-sm font-medium">Código de Rastreamento:</p>
+                <div className="flex items-center justify-center gap-2">
+                  <code className="text-2xl font-bold tracking-wider bg-background px-4 py-2 rounded border-2 border-primary">
+                    {trackingCode}
+                  </code>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Salve este código para acompanhar seu pedido
+                </p>
+              </div>
+            )}
+
+            <div className="pt-4 border-t">
+              <p className="text-sm text-muted-foreground mb-4">
+                Você receberá atualizações sobre o status do seu pedido
+              </p>
+              <Button onClick={handleCloseSuccess} size="lg" className="w-full">
+                Fechar
               </Button>
             </div>
           </div>
