@@ -231,7 +231,7 @@ const PublicStore = () => {
               >
                 <Link to="/track">
                   <Package className="h-5 w-5 mr-2" />
-                  <span className="hidden sm:inline">Acompanhar Pedido</span>
+                  <span className="hidden sm:inline">Acompanhar Meu Pedido</span>
                   <span className="sm:hidden">Pedido</span>
                 </Link>
               </Button>
