@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { z } from "zod";
+import { formatPhoneToWhatsApp, validateBrazilianPhone } from "@/lib/utils";
 
 interface CartItem {
   id: string;
@@ -29,7 +30,9 @@ interface CartModalProps {
 
 const checkoutSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  phone: z.string().regex(/^(\d{10,11})$/, "WhatsApp inválido. Use apenas números (ex: 85999999999)"),
+  phone: z.string().refine(validateBrazilianPhone, {
+    message: "WhatsApp inválido. Use DDD + número (ex: 85999998888)"
+  }),
   address: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres"),
 });
 
@@ -70,11 +73,14 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
     setLoading(true);
 
     try {
+      // Formatar número para o padrão WhatsApp
+      const formattedPhone = formatPhoneToWhatsApp(formData.phone);
+      
       // Verificar se cliente já existe pelo WhatsApp
       const { data: existingClient } = await supabase
         .from("clients")
         .select("id")
-        .eq("phone", formData.phone)
+        .eq("phone", formattedPhone)
         .eq("restaurant_id", restaurantId)
         .maybeSingle();
 
@@ -97,7 +103,7 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
           .from("clients")
           .insert({
             name: formData.name,
-            phone: formData.phone,
+            phone: formattedPhone,
             address: formData.address,
             restaurant_id: restaurantId,
             is_registered: false,
@@ -284,14 +290,19 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">WhatsApp</Label>
+              <Label htmlFor="phone">WhatsApp (DDD + número)</Label>
               <Input
                 id="phone"
-                placeholder="85999999999"
+                type="tel"
+                placeholder="85999998888"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, "") })}
+                maxLength={11}
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                Exemplo: 85999998888 (será salvo como +5585999998888)
+              </p>
             </div>
 
             <div className="space-y-2">

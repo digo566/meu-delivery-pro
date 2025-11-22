@@ -6,10 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { z } from "zod";
+import { formatPhoneToWhatsApp, validateBrazilianPhone } from "@/lib/utils";
 
 const clientAuthSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  phone: z.string().regex(/^(\d{10,11})$/, "WhatsApp inválido. Use apenas números (ex: 85999999999)"),
+  phone: z.string().refine(validateBrazilianPhone, {
+    message: "WhatsApp inválido. Use DDD + número (ex: 85999998888)"
+  }),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
 
@@ -35,11 +38,14 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
 
     try {
       if (isLogin) {
+        // Formatar número para o padrão WhatsApp
+        const formattedPhone = formatPhoneToWhatsApp(formData.phone);
+        
         // Login - buscar cliente pelo WhatsApp
         const { data: clientData, error: clientError } = await supabase
           .from("clients")
           .select("user_id, email")
-          .eq("phone", formData.phone)
+          .eq("phone", formattedPhone)
           .eq("restaurant_id", restaurantId)
           .maybeSingle();
 
@@ -78,11 +84,14 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
           return;
         }
 
+        // Formatar número para o padrão WhatsApp
+        const formattedPhone = formatPhoneToWhatsApp(formData.phone);
+        
         // Verificar se WhatsApp já está cadastrado
         const { data: existingClient } = await supabase
           .from("clients")
           .select("id")
-          .eq("phone", formData.phone)
+          .eq("phone", formattedPhone)
           .eq("restaurant_id", restaurantId)
           .maybeSingle();
 
@@ -93,7 +102,7 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
         }
 
         // Criar email único baseado no telefone (formato: phone@restaurant-id.app)
-        const uniqueEmail = `${formData.phone}@${restaurantId.substring(0, 8)}.app`;
+        const uniqueEmail = `${formattedPhone.replace(/\D/g, "")}@${restaurantId.substring(0, 8)}.app`;
 
         // Criar usuário no auth
         const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -102,7 +111,7 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
           options: {
             emailRedirectTo: `${window.location.origin}/r/${restaurantId}`,
             data: {
-              phone: formData.phone,
+              phone: formattedPhone,
               name: formData.name,
             },
           },
@@ -123,7 +132,7 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
           const { error: clientError } = await supabase.from("clients").insert({
             name: formData.name,
             email: uniqueEmail,
-            phone: formData.phone,
+            phone: formattedPhone,
             restaurant_id: restaurantId,
             user_id: authData.user.id,
           });
@@ -164,11 +173,11 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
           )}
 
           <div>
-            <Label htmlFor="phone">WhatsApp (apenas números)</Label>
+            <Label htmlFor="phone">WhatsApp (DDD + número)</Label>
             <Input
               id="phone"
               type="tel"
-              placeholder="85999999999"
+              placeholder="85999998888"
               value={formData.phone}
               onChange={(e) => {
                 // Remove tudo que não for número
@@ -179,7 +188,7 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
               required
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Exemplo: 85999999999 (DDD + número)
+              Exemplo: 85999998888 (será salvo como +5585999998888)
             </p>
           </div>
 
