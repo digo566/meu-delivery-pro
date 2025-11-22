@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ShoppingCart, Store } from "lucide-react";
+import { ShoppingCart, Store, Package } from "lucide-react";
 import { toast } from "sonner";
 import { CartModal } from "@/components/CartModal";
 import { ProductOptionsDialog } from "@/components/ProductOptionsDialog";
@@ -223,20 +223,33 @@ const PublicStore = () => {
                 <p className="text-sm text-muted-foreground">{restaurantInfo.phone}</p>
               </div>
             </div>
-            <Button
-              variant="outline"
-              size="lg"
-              className="relative"
-              onClick={() => setCartModalOpen(true)}
-            >
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              Carrinho
-              {cart.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
-                </span>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="lg"
+                asChild
+              >
+                <Link to="/track">
+                  <Package className="h-5 w-5 mr-2" />
+                  <span className="hidden sm:inline">Acompanhar Pedido</span>
+                  <span className="sm:hidden">Pedido</span>
+                </Link>
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                className="relative"
+                onClick={() => setCartModalOpen(true)}
+              >
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                <span className="hidden sm:inline">Carrinho</span>
+                {cart.length > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                  </span>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </header>
