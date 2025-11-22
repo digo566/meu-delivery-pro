@@ -89,7 +89,7 @@ const TrackOrder = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 p-4 md:p-8">
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">Acompanhar Pedido</h1>
+          <h1 className="text-3xl font-bold text-foreground">Acompanhar Meu Pedido</h1>
           <p className="text-muted-foreground">Digite seu código de rastreamento</p>
         </div>
 
