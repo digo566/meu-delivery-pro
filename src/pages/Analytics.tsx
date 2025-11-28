@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { OrdersChart } from "@/components/analytics/OrdersChart";
 import { CancellationsChart } from "@/components/analytics/CancellationsChart";
@@ -8,14 +9,25 @@ import { AbandonmentChart } from "@/components/analytics/AbandonmentChart";
 import { TopProductsChart } from "@/components/analytics/TopProductsChart";
 import { BottomProductsChart } from "@/components/analytics/BottomProductsChart";
 import { PerformanceChart } from "@/components/analytics/PerformanceChart";
+import { InsightsPanel } from "@/components/analytics/InsightsPanel";
+import { PredictionsPanel } from "@/components/analytics/PredictionsPanel";
+import { FeedbackDialog } from "@/components/analytics/FeedbackDialog";
+import { AlertsNotification } from "@/components/analytics/AlertsNotification";
 import { useAnalyticsData } from "@/hooks/useAnalyticsData";
-import { Loader2, TrendingUp, ShoppingCart, XCircle, Package } from "lucide-react";
+import { useIntelligentAnalytics } from "@/hooks/useIntelligentAnalytics";
+import { Loader2, TrendingUp, ShoppingCart, XCircle, Package, MessageSquare } from "lucide-react";
 
 export default function Analytics() {
   const { data, loading, refetch } = useAnalyticsData();
+  const { analysis, loading: analysisLoading } = useIntelligentAnalytics();
   const [period, setPeriod] = useState<"day" | "week" | "month">("week");
+  const [feedbackDialog, setFeedbackDialog] = useState<{
+    open: boolean;
+    suggestion: string;
+    type: string;
+  }>({ open: false, suggestion: "", type: "" });
 
-  if (loading) {
+  if (loading || analysisLoading) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-[60vh]">
@@ -39,13 +51,16 @@ export default function Analytics() {
             </p>
           </div>
           
-          <Tabs value={period} onValueChange={(v) => setPeriod(v as any)} className="w-auto">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="day">Dia</TabsTrigger>
-              <TabsTrigger value="week">Semana</TabsTrigger>
-              <TabsTrigger value="month">Mês</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-4">
+            <AlertsNotification />
+            <Tabs value={period} onValueChange={(v) => setPeriod(v as any)} className="w-auto">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="day">Dia</TabsTrigger>
+                <TabsTrigger value="week">Semana</TabsTrigger>
+                <TabsTrigger value="month">Mês</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
 
         {/* KPI Cards */}
@@ -98,6 +113,38 @@ export default function Analytics() {
             </div>
           </Card>
         </div>
+
+        {/* Insights e Predições */}
+        {analysis && (
+          <div className="space-y-6">
+            <PredictionsPanel predicoes={analysis.predicoes} />
+            
+            <div className="relative">
+              <InsightsPanel
+                problemas={analysis.problemas_detectados}
+                sugestoes={analysis.sugestoes_personalizadas}
+              />
+              {analysis.sugestoes_personalizadas.length > 0 && (
+                <div className="flex justify-end mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setFeedbackDialog({
+                        open: true,
+                        suggestion: analysis.sugestoes_personalizadas[0],
+                        type: "sugestao_geral",
+                      })
+                    }
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Avaliar Sugestões
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Charts Grid */}
         <div className="grid gap-6 lg:grid-cols-2">
@@ -156,6 +203,13 @@ export default function Analytics() {
           </Card>
         </div>
       </div>
+
+      <FeedbackDialog
+        open={feedbackDialog.open}
+        onOpenChange={(open) => setFeedbackDialog({ ...feedbackDialog, open })}
+        suggestion={feedbackDialog.suggestion}
+        suggestionType={feedbackDialog.type}
+      />
     </DashboardLayout>
   );
 }

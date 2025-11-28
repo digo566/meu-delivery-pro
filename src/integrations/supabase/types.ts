@@ -14,6 +14,81 @@ export type Database = {
   }
   public: {
     Tables: {
+      analytics_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          is_resolved: boolean | null
+          message: string
+          metric_value: number | null
+          resolved_at: string | null
+          restaurant_id: string
+          severity: string
+          threshold_value: number | null
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          message: string
+          metric_value?: number | null
+          resolved_at?: string | null
+          restaurant_id: string
+          severity: string
+          threshold_value?: number | null
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          is_resolved?: boolean | null
+          message?: string
+          metric_value?: number | null
+          resolved_at?: string | null
+          restaurant_id?: string
+          severity?: string
+          threshold_value?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
+      analytics_predictions: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          id: string
+          predicted_value: number
+          prediction_date: string
+          prediction_type: string
+          restaurant_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          predicted_value: number
+          prediction_date: string
+          prediction_type: string
+          restaurant_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          predicted_value?: number
+          prediction_date?: string
+          prediction_type?: string
+          restaurant_id?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           cart_id: string
@@ -481,6 +556,45 @@ export type Database = {
           phone?: string
           restaurant_name?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      suggestion_feedback: {
+        Row: {
+          created_at: string
+          feedback_comment: string | null
+          id: string
+          rating: number | null
+          restaurant_id: string
+          suggestion_text: string
+          suggestion_type: string
+          updated_at: string
+          was_helpful: boolean | null
+          was_implemented: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          feedback_comment?: string | null
+          id?: string
+          rating?: number | null
+          restaurant_id: string
+          suggestion_text: string
+          suggestion_type: string
+          updated_at?: string
+          was_helpful?: boolean | null
+          was_implemented?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          feedback_comment?: string | null
+          id?: string
+          rating?: number | null
+          restaurant_id?: string
+          suggestion_text?: string
+          suggestion_type?: string
+          updated_at?: string
+          was_helpful?: boolean | null
+          was_implemented?: boolean | null
         }
         Relationships: []
       }
