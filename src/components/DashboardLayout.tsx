@@ -12,7 +12,8 @@ import {
   LogOut,
   Menu,
   Store,
-  ShoppingCart
+  ShoppingCart,
+  BarChart3
 } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -59,6 +60,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const navItems = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { to: "/analytics", icon: BarChart3, label: "Analytics 3D" },
     { to: "/products", icon: Package, label: "Produtos" },
     { to: "/orders", icon: ShoppingBag, label: "Pedidos" },
     { to: "/customers", icon: Users, label: "Clientes" },
