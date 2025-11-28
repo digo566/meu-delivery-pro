@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { analisarDadosInteligente } from "@/lib/analytics/intelligentAnalytics";
-import { AnalysisInput, AnalysisOutput } from "@/lib/analytics/types";
+import { AnalysisInput, AnalysisOutput, Problem } from "@/lib/analytics/types";
+import { Prediction } from "@/lib/analytics/predictions";
+import { toast } from "sonner";
 
 /**
  * Hook React para usar o sistema de análise inteligente
  */
 export function useIntelligentAnalytics() {
-  const [analysis, setAnalysis] = useState<AnalysisOutput | null>(null);
+  const [analysis, setAnalysis] = useState<(AnalysisOutput & { predicoes: Prediction[] }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -163,11 +165,59 @@ export function useIntelligentAnalytics() {
       // Executar análise inteligente
       const resultado = analisarDadosInteligente(input);
       setAnalysis(resultado);
+      
+      // Salvar predições no banco
+      await salvarPredicoes(user.id, resultado.predicoes);
+      
+      // Criar alertas para problemas críticos
+      await criarAlertas(user.id, resultado.problemas_detectados);
     } catch (err) {
       console.error("Erro na análise inteligente:", err);
       setError("Erro ao processar análise");
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const salvarPredicoes = async (restaurantId: string, predicoes: Prediction[]) => {
+    try {
+      const dataPredicao = new Date();
+      dataPredicao.setDate(dataPredicao.getDate() + 7);
+      
+      const predicoesParaSalvar = predicoes.map((p) => ({
+        restaurant_id: restaurantId,
+        prediction_type: p.tipo,
+        predicted_value: p.valor_previsto,
+        confidence_score: p.confianca,
+        prediction_date: dataPredicao.toISOString().split('T')[0],
+      }));
+      
+      await supabase.from("analytics_predictions").insert(predicoesParaSalvar);
+    } catch (err) {
+      console.error("Erro ao salvar predições:", err);
+    }
+  };
+  
+  const criarAlertas = async (restaurantId: string, problemas: Problem[]) => {
+    try {
+      // Apenas criar alertas para problemas de alta gravidade
+      const problemasCriticos = problemas.filter(
+        (p) => p.gravidade === "crítica" || p.gravidade === "alta"
+      );
+      
+      if (problemasCriticos.length === 0) return;
+      
+      const alertas = problemasCriticos.map((p) => ({
+        restaurant_id: restaurantId,
+        alert_type: p.tipo,
+        severity: p.gravidade,
+        title: p.tipo.replace(/_/g, " ").toUpperCase(),
+        message: p.mensagem,
+      }));
+      
+      await supabase.from("analytics_alerts").insert(alertas);
+    } catch (err) {
+      console.error("Erro ao criar alertas:", err);
     }
   };
 

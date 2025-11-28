@@ -2,6 +2,7 @@ import { AnalysisInput, AnalysisOutput, Trend, ProductTrend } from "./types";
 import { LearningEngine } from "./learningEngine";
 import { ProblemDetector } from "./problemDetector";
 import { SuggestionEngine } from "./suggestionEngine";
+import { gerarPredicoes, Prediction } from "./predictions";
 import {
   detectarTendencia,
   classificarTendencia,
@@ -13,7 +14,7 @@ import {
  * Sistema Principal de Análise Inteligente
  * Orquestra aprendizado, detecção de problemas e geração de sugestões
  */
-export function analisarDadosInteligente(input: AnalysisInput): AnalysisOutput {
+export function analisarDadosInteligente(input: AnalysisInput): AnalysisOutput & { predicoes: Prediction[] } {
   // 1. Inicializar motor de aprendizado
   const learning = new LearningEngine(input.historico, input.dados_atual);
   
@@ -33,12 +34,16 @@ export function analisarDadosInteligente(input: AnalysisInput): AnalysisOutput {
   // 4. Analisar tendências
   const tendencias = analisarTendencias(input);
   
-  // 5. Retornar análise completa
+  // 5. Gerar predições usando machine learning
+  const predicoes = gerarPredicoes(input.historico);
+  
+  // 6. Retornar análise completa
   return {
     problemas_detectados: problemas,
     sugestoes_personalizadas: sugestoes,
     tendencias,
     metricas_aprendidas: learning.getResumoMetricas(),
+    predicoes,
   };
 }
 
