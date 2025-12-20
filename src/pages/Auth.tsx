@@ -49,14 +49,24 @@ const Auth = () => {
         password: validation.data.password,
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("Invalid login credentials")) {
+          toast.error("Email ou senha incorretos. Verifique suas credenciais.");
+        } else if (error.message.includes("Email not confirmed")) {
+          toast.error("Email não confirmado. Verifique sua caixa de entrada.");
+        } else {
+          toast.error(error.message || "Erro ao fazer login");
+        }
+        return;
+      }
 
       if (data.user) {
         toast.success("Login realizado com sucesso!");
         navigate("/dashboard");
       }
     } catch (error: any) {
-      toast.error(error.message || "Erro ao fazer login");
+      console.error("Login error:", error);
+      toast.error("Erro inesperado. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -99,14 +109,24 @@ const Auth = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("User already registered")) {
+          toast.error("Este email já está cadastrado. Tente fazer login.");
+        } else if (error.message.includes("Password")) {
+          toast.error("Senha inválida. Use pelo menos 6 caracteres.");
+        } else {
+          toast.error(error.message || "Erro ao criar conta");
+        }
+        return;
+      }
 
       if (data.user) {
         toast.success("Cadastro realizado! Redirecionando...");
         navigate("/dashboard");
       }
     } catch (error: any) {
-      toast.error(error.message || "Erro ao criar conta");
+      console.error("Signup error:", error);
+      toast.error("Erro inesperado. Tente novamente.");
     } finally {
       setLoading(false);
     }
