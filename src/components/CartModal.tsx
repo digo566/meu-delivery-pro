@@ -9,13 +9,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { z } from "zod";
-import { formatPhoneToWhatsApp, validateBrazilianPhone } from "@/lib/utils";
+import { validateBrazilianPhone } from "@/lib/utils";
 
 interface CartItem {
   id: string;
   name: string;
   price: number;
   quantity: number;
+  selectedOptions?: {
+    optionItemId: string;
+    optionItemName: string;
+    priceModifier: number;
+  }[];
 }
 
 interface CartModalProps {
@@ -74,77 +79,28 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
     setLoading(true);
 
     try {
-      // Formatar número para o padrão WhatsApp
-      const formattedPhone = formatPhoneToWhatsApp(formData.phone);
-      
-      // Verificar se cliente já existe pelo WhatsApp
-      const { data: existingClient } = await supabase
-        .from("clients")
-        .select("id")
-        .eq("phone", formattedPhone)
-        .eq("restaurant_id", restaurantId)
-        .maybeSingle();
+      // Chamar edge function segura
+      const { data, error } = await supabase.functions.invoke("public-checkout", {
+        body: {
+          step: "save-data",
+          restaurantId,
+          name: formData.name,
+          phone: formData.phone,
+          address: formData.address,
+          items: items.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            selectedOptions: item.selectedOptions,
+          })),
+        },
+      });
 
-      let clientId: string;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      if (existingClient) {
-        clientId = existingClient.id;
-        
-        // Atualizar dados do cliente
-        await supabase
-          .from("clients")
-          .update({
-            name: formData.name,
-            address: formData.address,
-          })
-          .eq("id", clientId);
-      } else {
-        // Criar novo cliente
-        const { data: newClient, error: clientError } = await supabase
-          .from("clients")
-          .insert({
-            name: formData.name,
-            phone: formattedPhone,
-            address: formData.address,
-            restaurant_id: restaurantId,
-            is_registered: false,
-          })
-          .select()
-          .single();
-
-        if (clientError) throw clientError;
-        clientId = newClient.id;
-      }
-
-      // Criar carrinho no banco de dados
-      const { data: newCart, error: cartError } = await supabase
-        .from("carts")
-        .insert({
-          client_id: clientId,
-          restaurant_id: restaurantId,
-          is_abandoned: false,
-        })
-        .select()
-        .single();
-
-      if (cartError) throw cartError;
-
-      // Transferir itens do guest cart para o carrinho permanente
-      const cartItems = items.map((item) => ({
-        cart_id: newCart.id,
-        product_id: item.id,
-        quantity: item.quantity,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from("cart_items")
-        .insert(cartItems);
-
-      if (itemsError) throw itemsError;
-
-      // Salvar o ID do carrinho para usar no pedido
-      setSavedCartId(newCart.id);
-      
+      setSavedCartId(data.cartId);
       setStep('payment');
     } catch (error) {
       console.error("Erro ao salvar carrinho:", error);
@@ -173,36 +129,25 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
     setLoading(true);
 
     try {
-      // Obter o client_id do carrinho
-      const { data: cart } = await supabase
-        .from("carts")
-        .select("client_id")
-        .eq("id", savedCartId)
-        .single();
-
-      if (!cart) throw new Error("Carrinho não encontrado");
-
-      // Criar pedido
-      const { data: newOrder, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          cart_id: savedCartId,
-          client_id: cart.client_id,
-          restaurant_id: restaurantId,
-          total_amount: total,
-          status: "pending",
-          payment_method: formData.paymentMethod,
-          needs_change: formData.needsChange,
-          change_amount: formData.needsChange && formData.changeAmount ? parseFloat(formData.changeAmount) : null,
+      // Chamar edge function segura para finalizar
+      const { data, error } = await supabase.functions.invoke("public-checkout", {
+        body: {
+          step: "finalize",
+          restaurantId,
+          cartId: savedCartId,
+          paymentMethod: formData.paymentMethod,
+          needsChange: formData.needsChange,
+          changeAmount: formData.needsChange && formData.changeAmount ? parseFloat(formData.changeAmount) : null,
           notes: formData.notes || null,
-        })
-        .select("tracking_code")
-        .single();
+          totalAmount: total,
+        },
+      });
 
-      if (orderError) throw orderError;
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       // Salvar código de rastreamento
-      setTrackingCode(newOrder?.tracking_code || null);
+      setTrackingCode(data.trackingCode || null);
 
       // Limpar carrinho local
       if (guestCartId) {
