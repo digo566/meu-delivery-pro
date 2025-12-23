@@ -11,31 +11,35 @@ const Index = () => {
       <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={vpexLogo} alt="vpex" className="w-12 h-12 object-contain" />
-            <span className="font-bold text-xl">vpex</span>
+            <img src={vpexLogo} alt="vpex" className="w-16 h-16 object-contain" />
+            <span className="font-bold text-2xl">vpex</span>
           </div>
           <Button onClick={() => navigate("/auth")}>Entrar</Button>
         </div>
       </nav>
 
       <main className="container py-24">
-        <div className="text-center space-y-6 max-w-3xl mx-auto">
-          <img src={vpexLogo} alt="vpex" className="w-32 h-32 mx-auto object-contain mb-6" />
-          <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
-            Gerencie seu delivery de forma{" "}
-            <span className="text-primary">profissional</span>
-          </h1>
-          <p className="text-xl text-muted-foreground">
-            Plataforma completa para restaurantes gerenciarem pedidos, produtos e
-            clientes em um só lugar.
-          </p>
-          <div className="flex gap-4 justify-center pt-8">
-            <Button size="lg" onClick={() => navigate("/auth")}>
-              Começar Gratuitamente
-            </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/auth")}>
-              Fazer Login
-            </Button>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-12 max-w-6xl mx-auto">
+          <div className="flex-1 space-y-6 text-center md:text-left">
+            <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
+              Gerencie seu delivery de forma{" "}
+              <span className="text-primary">profissional</span>
+            </h1>
+            <p className="text-xl text-muted-foreground">
+              Plataforma completa para restaurantes gerenciarem pedidos, produtos e
+              clientes em um só lugar.
+            </p>
+            <div className="flex gap-4 justify-center md:justify-start pt-8">
+              <Button size="lg" onClick={() => navigate("/auth")}>
+                Começar Gratuitamente
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => navigate("/auth")}>
+                Fazer Login
+              </Button>
+            </div>
+          </div>
+          <div className="flex-shrink-0">
+            <img src={vpexLogo} alt="vpex" className="w-56 h-56 md:w-72 md:h-72 object-contain" />
           </div>
         </div>
 
