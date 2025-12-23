@@ -7,8 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Store } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { z } from "zod";
+import vpexLogo from "@/assets/vpex-logo.jpeg";
 
 const loginSchema = z.object({
   email: z.string().trim().email("Email inválido").max(255, "Email muito longo"),
@@ -147,9 +148,7 @@ const Auth = () => {
 
       <Card className="w-full max-w-md relative z-10 border-primary/25">
         <CardHeader className="space-y-1 text-center relative">
-          <div className="mx-auto w-14 h-14 rounded-xl flex items-center justify-center mb-4 bg-[var(--gradient-primary)] shadow-[var(--shadow-glow)]">
-            <Store className="w-7 h-7 text-primary-foreground" />
-          </div>
+          <img src={vpexLogo} alt="vpex" className="mx-auto w-14 h-14 rounded-xl object-cover mb-4 shadow-[var(--shadow-glow)]" />
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
             vpex
           </CardTitle>
