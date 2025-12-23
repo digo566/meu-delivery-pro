@@ -11,10 +11,10 @@ import {
   Users, 
   LogOut,
   Menu,
-  Store,
   ShoppingCart,
   BarChart3
 } from "lucide-react";
+import vpexLogo from "@/assets/vpex-logo.jpeg";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -101,9 +101,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r border-border/50 bg-card/80 backdrop-blur-xl sm:flex">
         <div className="flex h-16 items-center border-b border-border/50 px-4 gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-            <Store className="w-5 h-5 text-primary-foreground" />
-          </div>
+          <img src={vpexLogo} alt="vpex" className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-primary/30" />
           <span className="font-bold text-lg bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">vpex</span>
         </div>
         <nav className="flex-1 px-3 py-6 space-y-2">
@@ -132,9 +130,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <SheetContent side="left" className="sm:max-w-xs bg-card/95 backdrop-blur-xl border-border/50">
               <nav className="grid gap-4 text-lg font-medium">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-                    <Store className="w-5 h-5 text-primary-foreground" />
-                  </div>
+                  <img src={vpexLogo} alt="vpex" className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-primary/30" />
                   <span className="font-bold text-lg">vpex</span>
                 </div>
                 <NavItems />

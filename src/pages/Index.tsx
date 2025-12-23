@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Store, TrendingUp, Users, Package } from "lucide-react";
+import { TrendingUp, Users, Package } from "lucide-react";
+import vpexLogo from "@/assets/vpex-logo.jpeg";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -10,9 +11,7 @@ const Index = () => {
       <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Store className="w-4 h-4 text-primary-foreground" />
-            </div>
+            <img src={vpexLogo} alt="vpex" className="w-8 h-8 rounded-lg object-cover" />
             <span className="font-bold text-xl">vpex</span>
           </div>
           <Button onClick={() => navigate("/auth")}>Entrar</Button>
