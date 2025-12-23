@@ -10,8 +10,8 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
       <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src={vpexLogo} alt="vpex" className="w-8 h-8 rounded-lg object-cover" />
+          <div className="flex items-center gap-3">
+            <img src={vpexLogo} alt="vpex" className="w-12 h-12 object-contain" />
             <span className="font-bold text-xl">vpex</span>
           </div>
           <Button onClick={() => navigate("/auth")}>Entrar</Button>
@@ -20,6 +20,7 @@ const Index = () => {
 
       <main className="container py-24">
         <div className="text-center space-y-6 max-w-3xl mx-auto">
+          <img src={vpexLogo} alt="vpex" className="w-32 h-32 mx-auto object-contain mb-6" />
           <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
             Gerencie seu delivery de forma{" "}
             <span className="text-primary">profissional</span>
