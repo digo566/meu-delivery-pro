@@ -36,7 +36,7 @@ const Index = () => {
             </div>
           </div>
           <div className="flex-shrink-0">
-            <img alt="vpex" className="w-56 h-56 md:w-72 md:h-72 object-contain" src="/lovable-uploads/fb4001b5-c955-46cf-85c6-f5cbf77daea6.png" />
+            <img alt="vpex" className="w-80 h-80 md:w-[28rem] md:h-[28rem] object-contain" src="/lovable-uploads/fb4001b5-c955-46cf-85c6-f5cbf77daea6.png" />
           </div>
         </div>
 
