@@ -81,12 +81,12 @@ const Orders = () => {
   };
 
   const statusColors: Record<string, string> = {
-    pending: "bg-yellow-500",
-    preparing: "bg-blue-500",
-    on_the_way: "bg-purple-500",
-    ready: "bg-green-500",
-    delivered: "bg-gray-500",
-    cancelled: "bg-red-500",
+    pending: "border-yellow-500/30 bg-yellow-500/20 text-yellow-400",
+    preparing: "border-blue-500/30 bg-blue-500/20 text-blue-400",
+    on_the_way: "border-purple-500/30 bg-purple-500/20 text-purple-400",
+    ready: "border-green-500/30 bg-green-500/20 text-green-400",
+    delivered: "border-muted-foreground/30 bg-muted/50 text-muted-foreground",
+    cancelled: "border-red-500/30 bg-red-500/20 text-red-400",
   };
 
   const statusLabels: Record<string, string> = {
@@ -110,9 +110,9 @@ const Orders = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Pedidos</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Pedidos</h1>
           <p className="text-muted-foreground">Gerencie os pedidos do seu restaurante</p>
         </div>
 
@@ -138,7 +138,7 @@ const Orders = () => {
                         {format(new Date(order.created_at), "PPpp", { locale: ptBR })}
                       </CardDescription>
                       <div className="pt-1">
-                        <code className="text-xs bg-muted px-2 py-1 rounded border">
+                        <code className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/30">
                           Código: {order.tracking_code}
                         </code>
                       </div>

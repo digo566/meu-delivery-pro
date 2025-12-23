@@ -84,11 +84,12 @@ const Dashboard = () => {
   };
 
   const statusColors: Record<string, string> = {
-    pending: "bg-yellow-500",
-    preparing: "bg-blue-500",
-    ready: "bg-green-500",
-    delivered: "bg-gray-500",
-    cancelled: "bg-red-500",
+    pending: "border-yellow-500/30 bg-yellow-500/20 text-yellow-400",
+    preparing: "border-blue-500/30 bg-blue-500/20 text-blue-400",
+    ready: "border-green-500/30 bg-green-500/20 text-green-400",
+    delivered: "border-muted-foreground/30 bg-muted/50 text-muted-foreground",
+    cancelled: "border-red-500/30 bg-red-500/20 text-red-400",
+    on_the_way: "border-purple-500/30 bg-purple-500/20 text-purple-400",
   };
 
   const statusLabels: Record<string, string> = {
@@ -97,6 +98,7 @@ const Dashboard = () => {
     ready: "Pronto",
     delivered: "Entregue",
     cancelled: "Cancelado",
+    on_the_way: "A Caminho",
   };
 
   if (loading) {
@@ -111,23 +113,23 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Dashboard</h1>
           <p className="text-muted-foreground">Visão geral do seu negócio</p>
         </div>
 
-        <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
+        <Card className="bg-gradient-to-r from-primary/15 via-accent/10 to-primary/5 border-primary/30 shadow-xl shadow-primary/10">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ExternalLink className="w-5 h-5" />
+            <CardTitle className="flex items-center gap-2 text-foreground">
+              <ExternalLink className="w-5 h-5 text-primary" />
               Link da Sua Loja Online
             </CardTitle>
             <CardDescription>Compartilhe este link para seus clientes fazerem pedidos</CardDescription>
           </CardHeader>
           <CardContent className="flex gap-2">
-            <Input value={storeUrl} readOnly className="font-mono text-sm" />
-            <Button onClick={copyStoreUrl} variant="outline">
+            <Input value={storeUrl} readOnly className="font-mono text-sm bg-background/50" />
+            <Button onClick={copyStoreUrl} variant="outline" className="border-primary/30 hover:bg-primary/10">
               <Copy className="w-4 h-4" />
             </Button>
             <Button onClick={() => window.open(storeUrl, "_blank")}>
@@ -137,47 +139,55 @@ const Dashboard = () => {
         </Card>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+          <Card className="group hover:shadow-lg hover:shadow-primary/10 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total de Pedidos</CardTitle>
-              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+              <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                <ShoppingBag className="h-5 w-5 text-primary" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalOrders}</div>
+              <div className="text-3xl font-bold">{stats.totalOrders}</div>
               <p className="text-xs text-muted-foreground">pedidos realizados</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="group hover:shadow-lg hover:shadow-primary/10 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center group-hover:bg-green-500/30 transition-colors">
+                <DollarSign className="h-5 w-5 text-green-400" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-3xl font-bold text-green-400">
                 R$ {stats.totalRevenue.toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground">em vendas</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="group hover:shadow-lg hover:shadow-primary/10 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center group-hover:bg-accent/30 transition-colors">
+                <TrendingUp className="h-5 w-5 text-accent" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-3xl font-bold">
                 R$ {stats.averageTicket.toFixed(2)}
               </div>
               <p className="text-xs text-muted-foreground">por pedido</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="group hover:shadow-lg hover:shadow-primary/10 transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Produto Mais Vendido</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
+              <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center group-hover:bg-yellow-500/30 transition-colors">
+                <Package className="h-5 w-5 text-yellow-400" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.topProduct}</div>
@@ -192,16 +202,17 @@ const Dashboard = () => {
             <CardDescription>Últimos 5 pedidos realizados</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3">
               {recentOrders.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">
-                  Nenhum pedido realizado ainda
-                </p>
+                <div className="text-center py-12 text-muted-foreground">
+                  <ShoppingBag className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                  <p>Nenhum pedido realizado ainda</p>
+                </div>
               ) : (
                 recentOrders.map((order) => (
                   <div
                     key={order.id}
-                    className="flex items-center justify-between p-4 border rounded-lg"
+                    className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border/50 hover:bg-secondary/50 transition-colors"
                   >
                     <div>
                       <p className="font-medium">{order.clients?.name || "Cliente não identificado"}</p>
@@ -210,7 +221,7 @@ const Dashboard = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-4">
-                      <p className="font-bold">R$ {parseFloat(order.total_amount).toFixed(2)}</p>
+                      <p className="font-bold text-lg">R$ {parseFloat(order.total_amount).toFixed(2)}</p>
                       <Badge className={statusColors[order.status]}>
                         {statusLabels[order.status]}
                       </Badge>

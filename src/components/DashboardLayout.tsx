@@ -73,10 +73,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <NavLink
           key={item.to}
           to={item.to}
-          className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-          activeClassName="bg-muted text-primary font-medium"
+          className="flex items-center gap-3 rounded-xl px-4 py-3 text-muted-foreground transition-all hover:text-foreground hover:bg-secondary/50"
+          activeClassName="bg-gradient-to-r from-primary/20 to-accent/10 text-foreground font-medium border border-primary/30 shadow-md shadow-primary/10"
         >
-          <item.icon className="h-4 w-4" />
+          <item.icon className="h-5 w-5" />
           {item.label}
         </NavLink>
       ))}
@@ -92,22 +92,28 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <aside className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r bg-background sm:flex">
-        <div className="flex h-14 items-center border-b px-4 gap-2">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <Store className="w-4 h-4 text-primary-foreground" />
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      {/* Glow effects */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[128px]" />
+        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-accent/15 rounded-full blur-[100px]" />
+      </div>
+      
+      <aside className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r border-border/50 bg-card/80 backdrop-blur-xl sm:flex">
+        <div className="flex h-16 items-center border-b border-border/50 px-4 gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
+            <Store className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="font-bold text-lg">MeuDeliveryPro</span>
+          <span className="font-bold text-lg bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">MeuDeliveryPro</span>
         </div>
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-6 space-y-2">
           <NavItems />
         </nav>
-        <div className="border-t p-4">
+        <div className="border-t border-border/50 p-4">
           <Button 
             onClick={handleLogout} 
             variant="ghost" 
-            className="w-full justify-start gap-3"
+            className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           >
             <LogOut className="h-4 w-4" />
             Sair
@@ -116,26 +122,26 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </aside>
 
       <div className="flex flex-col sm:gap-4 sm:pl-60">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/50 bg-card/60 backdrop-blur-xl px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
           <Sheet>
             <SheetTrigger asChild>
-              <Button size="icon" variant="outline" className="sm:hidden">
+              <Button size="icon" variant="outline" className="sm:hidden border-border/50 bg-card/50 backdrop-blur-md">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="sm:max-w-xs">
-              <nav className="grid gap-6 text-lg font-medium">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                    <Store className="w-4 h-4 text-primary-foreground" />
+            <SheetContent side="left" className="sm:max-w-xs bg-card/95 backdrop-blur-xl border-border/50">
+              <nav className="grid gap-4 text-lg font-medium">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
+                    <Store className="w-5 h-5 text-primary-foreground" />
                   </div>
-                  <span className="font-bold">MeuDeliveryPro</span>
+                  <span className="font-bold text-lg">MeuDeliveryPro</span>
                 </div>
                 <NavItems />
                 <Button 
                   onClick={handleLogout} 
                   variant="ghost" 
-                  className="justify-start gap-3"
+                  className="justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 mt-4"
                 >
                   <LogOut className="h-4 w-4" />
                   Sair
@@ -144,7 +150,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </SheetContent>
           </Sheet>
         </header>
-        <main className="flex-1 p-4 sm:px-6 sm:py-0">
+        <main className="relative flex-1 p-4 sm:px-6 sm:py-0">
           {children}
         </main>
       </div>
