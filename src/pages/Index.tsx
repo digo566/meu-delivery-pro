@@ -2,12 +2,9 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Users, Package } from "lucide-react";
 import vpexLogo from "@/assets/vpex-logo.png";
-
 const Index = () => {
   const navigate = useNavigate();
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
+  return <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
       <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
@@ -39,7 +36,7 @@ const Index = () => {
             </div>
           </div>
           <div className="flex-shrink-0">
-            <img src={vpexLogo} alt="vpex" className="w-56 h-56 md:w-72 md:h-72 object-contain" />
+            <img alt="vpex" className="w-56 h-56 md:w-72 md:h-72 object-contain" src="/lovable-uploads/fb4001b5-c955-46cf-85c6-f5cbf77daea6.png" />
           </div>
         </div>
 
@@ -78,8 +75,6 @@ const Index = () => {
           </div>
         </div>
       </main>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
