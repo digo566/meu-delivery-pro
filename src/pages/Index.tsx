@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Users, Package } from "lucide-react";
-import vpexLogo from "@/assets/vpex-logo.jpeg";
+import vpexLogo from "@/assets/vpex-logo.png";
 
 const Index = () => {
   const navigate = useNavigate();

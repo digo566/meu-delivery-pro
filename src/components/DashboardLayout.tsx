@@ -14,7 +14,7 @@ import {
   ShoppingCart,
   BarChart3
 } from "lucide-react";
-import vpexLogo from "@/assets/vpex-logo.jpeg";
+import vpexLogo from "@/assets/vpex-logo.png";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
