@@ -104,7 +104,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
             <Store className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="font-bold text-lg bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">MeuDeliveryPro</span>
+          <span className="font-bold text-lg bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">vpex</span>
         </div>
         <nav className="flex-1 px-3 py-6 space-y-2">
           <NavItems />
@@ -135,7 +135,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
                     <Store className="w-5 h-5 text-primary-foreground" />
                   </div>
-                  <span className="font-bold text-lg">MeuDeliveryPro</span>
+                  <span className="font-bold text-lg">vpex</span>
                 </div>
                 <NavItems />
                 <Button 

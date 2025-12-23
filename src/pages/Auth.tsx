@@ -151,7 +151,7 @@ const Auth = () => {
             <Store className="w-7 h-7 text-primary-foreground" />
           </div>
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-            MeuDeliveryPro
+            vpex
           </CardTitle>
           <CardDescription className="text-muted-foreground">
             Gerencie seu restaurante de forma profissional
