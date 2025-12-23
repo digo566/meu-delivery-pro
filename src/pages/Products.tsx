@@ -156,10 +156,10 @@ const Products = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Produtos</h1>
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Produtos</h1>
             <p className="text-muted-foreground">Gerencie o cardápio do seu restaurante</p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -261,26 +261,31 @@ const Products = () => {
             </Card>
           ) : (
             products.map((product) => (
-              <Card key={product.id}>
-                <CardHeader>
+              <Card key={product.id} className="group hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 overflow-hidden">
+                <CardHeader className="p-0">
                   {product.image_url && (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-48 object-cover rounded-md mb-4"
-                    />
+                    <div className="relative overflow-hidden">
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent" />
+                    </div>
                   )}
-                  <CardTitle className="flex items-center justify-between">
-                    {product.name}
-                    {!product.available && (
-                      <span className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded">
-                        Indisponível
-                      </span>
-                    )}
-                  </CardTitle>
-                  <CardDescription>{product.description}</CardDescription>
+                  <div className="p-6 pb-2">
+                    <CardTitle className="flex items-center justify-between">
+                      {product.name}
+                      {!product.available && (
+                        <span className="text-xs bg-destructive/20 text-destructive border border-destructive/30 px-2 py-1 rounded-full">
+                          Indisponível
+                        </span>
+                      )}
+                    </CardTitle>
+                    <CardDescription className="line-clamp-2">{product.description}</CardDescription>
+                  </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-0">
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-2xl font-bold text-primary">
                       R$ {product.price.toFixed(2)}
@@ -289,6 +294,7 @@ const Products = () => {
                       <Button
                         size="icon"
                         variant="outline"
+                        className="border-border/50 hover:bg-primary/10 hover:border-primary/30"
                         onClick={() => openDialog(product)}
                       >
                         <Pencil className="h-4 w-4" />
@@ -296,6 +302,7 @@ const Products = () => {
                       <Button
                         size="icon"
                         variant="outline"
+                        className="border-border/50 hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive"
                         onClick={() => handleDelete(product.id)}
                       >
                         <Trash2 className="h-4 w-4" />

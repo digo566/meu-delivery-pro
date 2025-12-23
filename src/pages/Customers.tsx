@@ -134,9 +134,9 @@ const Customers = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Clientes</h1>
           <p className="text-muted-foreground">CRM e histórico de clientes</p>
         </div>
 
@@ -151,10 +151,12 @@ const Customers = () => {
             </Card>
           ) : (
             clients.map((client) => (
-              <Card key={client.id}>
+              <Card key={client.id} className="group hover:shadow-lg hover:shadow-primary/10 transition-all duration-300">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                      <User className="w-5 h-5 text-primary" />
+                    </div>
                     {client.name}
                   </CardTitle>
                   <CardDescription className="flex items-center gap-2">
@@ -277,12 +279,12 @@ const Customers = () => {
                                 client.orders.map((order) => (
                                   <div
                                     key={order.id}
-                                    className="flex justify-between text-sm p-2 border rounded"
+                                    className="flex justify-between text-sm p-3 rounded-xl bg-secondary/30 border border-border/50"
                                   >
                                     <span>
                                       {new Date(order.created_at).toLocaleDateString("pt-BR")}
                                     </span>
-                                    <span className="font-semibold">
+                                    <span className="font-semibold text-primary">
                                       R$ {Number(order.total_amount).toFixed(2)}
                                     </span>
                                   </div>
