@@ -92,33 +92,32 @@ const PublicStore = () => {
 
   const loadStoreData = async () => {
     try {
+      // Use secure RPC function to get public profile data (respects show_phone_publicly setting)
       const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("restaurant_name, phone")
-        .eq("id", restaurantId)
-        .maybeSingle();
+        .rpc("get_public_profile_with_phone", { profile_id: restaurantId });
 
       if (profileError) throw profileError;
       
-      if (!profileData) {
+      if (!profileData || profileData.length === 0) {
         setRestaurantInfo(null);
         setLoading(false);
         return;
       }
       
-      setRestaurantInfo(profileData);
+      const profile = profileData[0];
+      setRestaurantInfo({
+        restaurant_name: profile.restaurant_name,
+        phone: profile.phone || ""
+      });
 
+      // Use secure RPC function to get public products (excludes cost_price/profit_margin)
       const { data: productsData, error: productsError } = await supabase
-        .from("products")
-        .select("*")
-        .eq("restaurant_id", restaurantId)
-        .eq("available", true)
-        .order("created_at", { ascending: false });
+        .rpc("get_public_products", { restaurant_id_param: restaurantId });
 
       if (productsError) throw productsError;
       
       setProducts(productsData || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados da loja");
     } finally {
