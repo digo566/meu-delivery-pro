@@ -535,6 +535,7 @@ export type Database = {
           opening_hours: Json | null
           phone: string
           restaurant_name: string
+          show_phone_publicly: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -545,6 +546,7 @@ export type Database = {
           opening_hours?: Json | null
           phone: string
           restaurant_name: string
+          show_phone_publicly?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -555,6 +557,7 @@ export type Database = {
           opening_hours?: Json | null
           phone?: string
           restaurant_name?: string
+          show_phone_publicly?: boolean | null
           updated_at?: string | null
         }
         Relationships: []
@@ -625,6 +628,41 @@ export type Database = {
     }
     Functions: {
       generate_tracking_code: { Args: never; Returns: string }
+      get_public_products: {
+        Args: { restaurant_id_param: string }
+        Returns: {
+          available: boolean
+          created_at: string
+          description: string
+          id: string
+          image_url: string
+          name: string
+          price: number
+          restaurant_id: string
+          updated_at: string
+        }[]
+      }
+      get_public_profile: {
+        Args: { profile_id: string }
+        Returns: {
+          cover_url: string
+          id: string
+          logo_url: string
+          opening_hours: Json
+          restaurant_name: string
+        }[]
+      }
+      get_public_profile_with_phone: {
+        Args: { profile_id: string }
+        Returns: {
+          cover_url: string
+          id: string
+          logo_url: string
+          opening_hours: Json
+          phone: string
+          restaurant_name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
