@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { z } from "zod";
+import { sanitizeError } from "@/lib/errorHandler";
 import vpexLogo from "@/assets/vpex-logo.png";
 
 const loginSchema = z.object({
@@ -51,13 +52,7 @@ const Auth = () => {
       });
 
       if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          toast.error("Email ou senha incorretos. Verifique suas credenciais.");
-        } else if (error.message.includes("Email not confirmed")) {
-          toast.error("Email não confirmado. Verifique sua caixa de entrada.");
-        } else {
-          toast.error(error.message || "Erro ao fazer login");
-        }
+        toast.error(sanitizeError(error));
         return;
       }
 
@@ -65,9 +60,8 @@ const Auth = () => {
         toast.success("Login realizado com sucesso!");
         navigate("/dashboard");
       }
-    } catch (error: any) {
-      console.error("Login error:", error);
-      toast.error("Erro inesperado. Tente novamente.");
+    } catch (error: unknown) {
+      toast.error(sanitizeError(error));
     } finally {
       setLoading(false);
     }
@@ -110,13 +104,7 @@ const Auth = () => {
       });
 
       if (error) {
-        if (error.message.includes("User already registered")) {
-          toast.error("Este email já está cadastrado. Tente fazer login.");
-        } else if (error.message.includes("Password")) {
-          toast.error("Senha inválida. Use pelo menos 6 caracteres.");
-        } else {
-          toast.error(error.message || "Erro ao criar conta");
-        }
+        toast.error(sanitizeError(error));
         return;
       }
 
@@ -124,9 +112,8 @@ const Auth = () => {
         toast.success("Cadastro realizado! Redirecionando...");
         navigate("/dashboard");
       }
-    } catch (error: any) {
-      console.error("Signup error:", error);
-      toast.error("Erro inesperado. Tente novamente.");
+    } catch (error: unknown) {
+      toast.error(sanitizeError(error));
     } finally {
       setLoading(false);
     }
