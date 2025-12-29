@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -92,7 +92,6 @@ const Auth = () => {
         return;
       }
 
-      // Normalize phone number to include +55 if not present
       let normalizedPhone = validation.data.phone.replace(/\D/g, "");
       if (!normalizedPhone.startsWith("55")) {
         normalizedPhone = "55" + normalizedPhone;
@@ -134,32 +133,21 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[var(--gradient-subtle)]">
-      {/* Background glow effects */}
-      <div className="absolute inset-0 bg-[var(--gradient-glow)] opacity-90" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--accent)/0.18),transparent_55%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--primary)/0.16),transparent_55%)]" />
-
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/12 rounded-full blur-3xl animate-pulse" />
-      <div
-        className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent/12 rounded-full blur-3xl animate-pulse"
-        style={{ animationDelay: "1s" }}
-      />
-
-      <Card className="w-full max-w-md relative z-10 border-primary/25">
-        <CardHeader className="space-y-1 text-center relative">
-          <img src={vpexLogo} alt="vpex" className="mx-auto w-14 h-14 rounded-xl object-cover mb-4 shadow-[var(--shadow-glow)]" />
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1 text-center">
+          <img src={vpexLogo} alt="vpex" className="mx-auto w-12 h-12 object-cover mb-4" />
+          <CardTitle className="text-2xl font-bold text-foreground">
             vpex
           </CardTitle>
-          <CardDescription className="text-muted-foreground">
+          <CardDescription>
             Gerencie seu restaurante de forma profissional
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="relative">
+        <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Cadastro</TabsTrigger>
             </TabsList>
