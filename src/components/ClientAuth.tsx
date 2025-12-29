@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { z } from "zod";
 import { formatPhoneToWhatsApp, validateBrazilianPhone } from "@/lib/utils";
+import { sanitizeError } from "@/lib/errorHandler";
 
 const clientAuthSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -64,11 +65,7 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
         });
 
         if (authError) {
-          if (authError.message.includes("Invalid login credentials")) {
-            toast.error("Senha incorreta. Tente novamente.");
-          } else {
-            throw authError;
-          }
+          toast.error(sanitizeError(authError));
           setLoading(false);
           return;
         }
@@ -118,11 +115,7 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
         });
 
         if (authError) {
-          if (authError.message.includes("already registered")) {
-            toast.error("Erro ao criar conta. Este número pode já estar em uso.");
-          } else {
-            throw authError;
-          }
+          toast.error(sanitizeError(authError));
           setLoading(false);
           return;
         }
@@ -143,9 +136,8 @@ export function ClientAuth({ isOpen, onClose, onSuccess, restaurantId }: ClientA
           onSuccess();
         }
       }
-    } catch (error: any) {
-      console.error("Erro na autenticação:", error);
-      toast.error(error.message || "Erro ao processar solicitação");
+    } catch (error: unknown) {
+      toast.error(sanitizeError(error));
     } finally {
       setLoading(false);
     }
