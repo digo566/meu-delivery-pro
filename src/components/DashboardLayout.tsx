@@ -60,11 +60,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const navItems = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/analytics", icon: BarChart3, label: "Analytics 3D" },
+    { to: "/analytics", icon: BarChart3, label: "Analytics" },
     { to: "/products", icon: Package, label: "Produtos" },
     { to: "/orders", icon: ShoppingBag, label: "Pedidos" },
     { to: "/customers", icon: Users, label: "Clientes" },
-    { to: "/abandoned-carts", icon: ShoppingCart, label: "Carrinhos Abandonados" },
+    { to: "/abandoned-carts", icon: ShoppingCart, label: "Carrinhos" },
   ];
 
   const NavItems = () => (
@@ -73,10 +73,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <NavLink
           key={item.to}
           to={item.to}
-          className="flex items-center gap-3 rounded-xl px-4 py-3 text-muted-foreground transition-all hover:text-foreground hover:bg-secondary/50"
-          activeClassName="bg-gradient-to-r from-primary/20 to-accent/10 text-foreground font-medium border border-primary/30 shadow-md shadow-primary/10"
+          className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-colors hover:text-foreground hover:bg-secondary"
+          activeClassName="bg-primary/10 text-primary font-medium"
         >
-          <item.icon className="h-5 w-5" />
+          <item.icon className="h-4 w-4" />
           {item.label}
         </NavLink>
       ))}
@@ -85,33 +85,28 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background">
-      {/* Glow effects */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[128px]" />
-        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-accent/15 rounded-full blur-[100px]" />
-      </div>
-      
-      <aside className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r border-border/50 bg-card/80 backdrop-blur-xl sm:flex">
-        <div className="flex h-16 items-center border-b border-border/50 px-4 gap-3">
-          <img src={vpexLogo} alt="vpex" className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-primary/30" />
-          <span className="font-bold text-lg bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">vpex</span>
+    <div className="flex min-h-screen w-full bg-background">
+      {/* Sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-10 hidden w-56 flex-col border-r bg-card sm:flex">
+        <div className="flex h-14 items-center border-b px-4 gap-3">
+          <img src={vpexLogo} alt="vpex" className="w-8 h-8 object-cover" />
+          <span className="font-semibold text-foreground">vpex</span>
         </div>
-        <nav className="flex-1 px-3 py-6 space-y-2">
+        <nav className="flex-1 px-3 py-4 space-y-1">
           <NavItems />
         </nav>
-        <div className="border-t border-border/50 p-4">
+        <div className="border-t p-3">
           <Button 
             onClick={handleLogout} 
             variant="ghost" 
-            className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+            className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
           >
             <LogOut className="h-4 w-4" />
             Sair
@@ -119,34 +114,40 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </aside>
 
-      <div className="flex flex-col sm:gap-4 sm:pl-60">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/50 bg-card/60 backdrop-blur-xl px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+      {/* Main Content */}
+      <div className="flex flex-col flex-1 sm:pl-56">
+        {/* Mobile Header */}
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-card px-4 sm:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button size="icon" variant="outline" className="sm:hidden border-border/50 bg-card/50 backdrop-blur-md">
+              <Button size="icon" variant="outline">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="sm:max-w-xs bg-card/95 backdrop-blur-xl border-border/50">
-              <nav className="grid gap-4 text-lg font-medium">
-                <div className="flex items-center gap-3 mb-6">
-                  <img src={vpexLogo} alt="vpex" className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-primary/30" />
-                  <span className="font-bold text-lg">vpex</span>
-                </div>
+            <SheetContent side="left" className="w-56 p-0">
+              <div className="flex h-14 items-center border-b px-4 gap-3">
+                <img src={vpexLogo} alt="vpex" className="w-8 h-8 object-cover" />
+                <span className="font-semibold">vpex</span>
+              </div>
+              <nav className="flex-1 px-3 py-4 space-y-1">
                 <NavItems />
+              </nav>
+              <div className="border-t p-3">
                 <Button 
                   onClick={handleLogout} 
                   variant="ghost" 
-                  className="justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 mt-4"
+                  className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive"
                 >
                   <LogOut className="h-4 w-4" />
                   Sair
                 </Button>
-              </nav>
+              </div>
             </SheetContent>
           </Sheet>
+          <span className="font-semibold">vpex</span>
         </header>
-        <main className="relative flex-1 p-4 sm:px-6 sm:py-0">
+        
+        <main className="flex-1 p-6">
           {children}
         </main>
       </div>
