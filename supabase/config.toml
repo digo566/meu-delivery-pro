@@ -1,1 +1,7 @@
 project_id = "fzlzthwvnrbzgjxhyymu"
+
+[functions.public-checkout]
+verify_jwt = false
+
+[functions.financial-ai-chat]
+verify_jwt = true
