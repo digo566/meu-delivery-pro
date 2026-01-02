@@ -948,6 +948,20 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_public_products_safe: {
+        Args: { restaurant_id_param: string }
+        Returns: {
+          available: boolean
+          created_at: string
+          description: string
+          id: string
+          image_url: string
+          name: string
+          price: number
+          restaurant_id: string
+          updated_at: string
+        }[]
+      }
       get_public_profile: {
         Args: { profile_id: string }
         Returns: {
