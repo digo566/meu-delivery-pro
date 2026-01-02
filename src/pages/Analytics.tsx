@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { OrdersChart } from "@/components/analytics/OrdersChart";
 import { CancellationsChart } from "@/components/analytics/CancellationsChart";
 import { AbandonmentChart } from "@/components/analytics/AbandonmentChart";
@@ -22,6 +24,9 @@ import { ProductAnalysisChart } from "@/components/finance/ProductAnalysisChart"
 import { useAnalyticsData } from "@/hooks/useAnalyticsData";
 import { useIntelligentAnalytics } from "@/hooks/useIntelligentAnalytics";
 import { useFinancialData } from "@/hooks/useFinancialData";
+import { format, subDays, subWeeks, subMonths, startOfDay, endOfDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import { 
   Loader2, 
   TrendingUp, 
@@ -38,14 +43,14 @@ import {
   Boxes,
   DollarSign,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  CalendarIcon
 } from "lucide-react";
 
 export default function Analytics() {
-  const { data, loading } = useAnalyticsData();
-  const { analysis, loading: analysisLoading } = useIntelligentAnalytics();
-  const { metrics: financeMetrics, products: financeProducts, diagnosis: financeDiagnosis, loading: financeLoading } = useFinancialData();
   const [period, setPeriod] = useState<"day" | "week" | "month">("week");
+  const [dateFrom, setDateFrom] = useState<Date>(subWeeks(new Date(), 1));
+  const [dateTo, setDateTo] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<"dashboard" | "ai">("dashboard");
   const [aiSubTab, setAiSubTab] = useState<"analytics" | "finance" | "expenses" | "inventory">("analytics");
   const [feedbackDialog, setFeedbackDialog] = useState<{
@@ -53,6 +58,25 @@ export default function Analytics() {
     suggestion: string;
     type: string;
   }>({ open: false, suggestion: "", type: "" });
+
+  // Atualiza as datas baseado no período selecionado
+  useEffect(() => {
+    const now = new Date();
+    if (period === "day") {
+      setDateFrom(subDays(now, 1));
+      setDateTo(now);
+    } else if (period === "week") {
+      setDateFrom(subWeeks(now, 1));
+      setDateTo(now);
+    } else if (period === "month") {
+      setDateFrom(subMonths(now, 1));
+      setDateTo(now);
+    }
+  }, [period]);
+
+  const { data, loading, refetch } = useAnalyticsData(dateFrom, dateTo);
+  const { analysis, loading: analysisLoading } = useIntelligentAnalytics();
+  const { metrics: financeMetrics, products: financeProducts, diagnosis: financeDiagnosis, loading: financeLoading } = useFinancialData();
 
   if (loading || analysisLoading) {
     return (
@@ -287,16 +311,93 @@ export default function Analytics() {
           </div>
         ) : (
           <>
-            {/* Period Selector */}
-            <div className="flex justify-end">
-              <Tabs value={period} onValueChange={(v) => setPeriod(v as "day" | "week" | "month")} className="w-auto">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="day">Dia</TabsTrigger>
-                  <TabsTrigger value="week">Semana</TabsTrigger>
-                  <TabsTrigger value="month">Mês</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
+            {/* Period Selector with Date Range */}
+            <Card className="p-4 bg-gradient-to-br from-background to-muted/20">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                  <span className="text-sm font-medium">Período de Análise</span>
+                </div>
+                
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  {/* Date Range Picker */}
+                  <div className="flex items-center gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-[140px] justify-start text-left font-normal",
+                            !dateFrom && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dateFrom ? format(dateFrom, "dd/MM/yyyy", { locale: ptBR }) : "De"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dateFrom}
+                          onSelect={(date) => date && setDateFrom(date)}
+                          disabled={(date) => date > dateTo || date > new Date()}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <span className="text-muted-foreground">até</span>
+                    
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-[140px] justify-start text-left font-normal",
+                            !dateTo && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dateTo ? format(dateTo, "dd/MM/yyyy", { locale: ptBR }) : "Até"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dateTo}
+                          onSelect={(date) => date && setDateTo(date)}
+                          disabled={(date) => date < dateFrom || date > new Date()}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  {/* Quick Period Selector */}
+                  <Tabs value={period} onValueChange={(v) => setPeriod(v as "day" | "week" | "month")} className="w-auto">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="day">Dia</TabsTrigger>
+                      <TabsTrigger value="week">Semana</TabsTrigger>
+                      <TabsTrigger value="month">Mês</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </div>
+              </div>
+              
+              {/* Selected Period Display */}
+              <div className="mt-3 text-sm text-muted-foreground flex items-center gap-2">
+                <span>Exibindo dados de</span>
+                <span className="font-medium text-foreground">
+                  {format(dateFrom, "dd 'de' MMMM", { locale: ptBR })}
+                </span>
+                <span>até</span>
+                <span className="font-medium text-foreground">
+                  {format(dateTo, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                </span>
+              </div>
+            </Card>
 
             {/* KPI Cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -390,7 +491,11 @@ export default function Analytics() {
                   <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                   Pedidos por Período
                 </h3>
-                <OrdersChart data={data?.pedidos_por_dia || []} period={period} />
+                <OrdersChart 
+                  data={data?.pedidos_por_dia || []} 
+                  period={period} 
+                  labels={data?.pedidos_por_dia_labels}
+                />
               </Card>
 
               <Card className="p-6 bg-gradient-to-br from-background to-muted/20 border-muted">
