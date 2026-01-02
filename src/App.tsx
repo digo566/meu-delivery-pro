@@ -13,6 +13,7 @@ import PublicStore from "./pages/PublicStore";
 import AbandonedCarts from "./pages/AbandonedCarts";
 import TrackOrder from "./pages/TrackOrder";
 import Analytics from "./pages/Analytics";
+import Finance from "./pages/Finance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/customers" element={<Customers />} />
           <Route path="/abandoned-carts" element={<AbandonedCarts />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/finance" element={<Finance />} />
           <Route path="/track" element={<TrackOrder />} />
           <Route path="/r/:restaurantId" element={<PublicStore />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
