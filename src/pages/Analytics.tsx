@@ -16,11 +16,11 @@ import { PredictionsPanel } from "@/components/analytics/PredictionsPanel";
 import { FeedbackDialog } from "@/components/analytics/FeedbackDialog";
 import { AlertsNotification } from "@/components/analytics/AlertsNotification";
 import { AnalyticsAIChat } from "@/components/analytics/AnalyticsAIChat";
-import { FinancialAIChat } from "@/components/finance/FinancialAIChat";
-import { ProductAnalysisChart } from "@/components/finance/ProductAnalysisChart";
+
+
 import { useAnalyticsData } from "@/hooks/useAnalyticsData";
 import { useIntelligentAnalytics } from "@/hooks/useIntelligentAnalytics";
-import { useFinancialData } from "@/hooks/useFinancialData";
+
 import { format, subDays, subWeeks, subMonths, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -33,12 +33,7 @@ import {
   MessageSquare, 
   Sparkles, 
   BarChart3,
-  Wallet,
   Brain,
-  PieChart,
-  DollarSign,
-  ArrowUpRight,
-  ArrowDownRight,
   CalendarIcon
 } from "lucide-react";
 
@@ -47,7 +42,6 @@ export default function Analytics() {
   const [dateFrom, setDateFrom] = useState<Date>(subWeeks(new Date(), 1));
   const [dateTo, setDateTo] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<"dashboard" | "ai">("dashboard");
-  const [aiSubTab, setAiSubTab] = useState<"analytics" | "finance">("analytics");
   const [feedbackDialog, setFeedbackDialog] = useState<{
     open: boolean;
     suggestion: string;
@@ -71,7 +65,7 @@ export default function Analytics() {
 
   const { data, loading, refetch } = useAnalyticsData(dateFrom, dateTo);
   const { analysis, loading: analysisLoading } = useIntelligentAnalytics();
-  const { metrics: financeMetrics, products: financeProducts, diagnosis: financeDiagnosis, loading: financeLoading } = useFinancialData();
+  
 
   if (loading || analysisLoading) {
     return (
@@ -116,168 +110,57 @@ export default function Analytics() {
 
         {activeTab === "ai" ? (
           <div className="space-y-6">
-            {/* AI Sub-tabs */}
-            <Tabs value={aiSubTab} onValueChange={(v) => setAiSubTab(v as "analytics" | "finance")} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
-                <TabsTrigger value="analytics" className="gap-2">
-                  <Sparkles className="h-4 w-4" />
-                  <span className="hidden sm:inline">Analytics IA</span>
-                  <span className="sm:hidden">Analytics</span>
-                </TabsTrigger>
-                <TabsTrigger value="finance" className="gap-2">
-                  <Wallet className="h-4 w-4" />
-                  <span className="hidden sm:inline">Finanças IA</span>
-                  <span className="sm:hidden">Finanças</span>
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Analytics AI Tab */}
-              <TabsContent value="analytics" className="mt-6">
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <div className="lg:col-span-1">
-                    <AnalyticsAIChat analyticsData={data} />
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="lg:col-span-1">
+                <AnalyticsAIChat analyticsData={data} />
+              </div>
+              <div className="lg:col-span-1 space-y-4">
+                <Card className="p-4 bg-gradient-to-br from-background to-muted/30">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    Resumo Operacional
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <p className="text-muted-foreground">Pedidos</p>
+                      <p className="text-xl font-bold">{data?.pedidos_total || 0}</p>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <p className="text-muted-foreground">Cancelamentos</p>
+                      <p className="text-xl font-bold text-destructive">{data?.cancelamentos || 0}</p>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <p className="text-muted-foreground">Abandono</p>
+                      <p className="text-xl font-bold text-orange-500">{data?.abandonos.toFixed(1) || 0}%</p>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <p className="text-muted-foreground">Produtos Ativos</p>
+                      <p className="text-xl font-bold text-green-500">{data?.produtos_mais_vendidos.length || 0}</p>
+                    </div>
                   </div>
-                  <div className="lg:col-span-1 space-y-4">
-                    <Card className="p-4 bg-gradient-to-br from-background to-muted/30">
-                      <h3 className="font-semibold mb-3 flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-primary" />
-                        Resumo Operacional
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="p-3 bg-muted/30 rounded-lg">
-                          <p className="text-muted-foreground">Pedidos</p>
-                          <p className="text-xl font-bold">{data?.pedidos_total || 0}</p>
-                        </div>
-                        <div className="p-3 bg-muted/30 rounded-lg">
-                          <p className="text-muted-foreground">Cancelamentos</p>
-                          <p className="text-xl font-bold text-destructive">{data?.cancelamentos || 0}</p>
-                        </div>
-                        <div className="p-3 bg-muted/30 rounded-lg">
-                          <p className="text-muted-foreground">Abandono</p>
-                          <p className="text-xl font-bold text-orange-500">{data?.abandonos.toFixed(1) || 0}%</p>
-                        </div>
-                        <div className="p-3 bg-muted/30 rounded-lg">
-                          <p className="text-muted-foreground">Produtos Ativos</p>
-                          <p className="text-xl font-bold text-green-500">{data?.produtos_mais_vendidos.length || 0}</p>
-                        </div>
-                      </div>
-                    </Card>
+                </Card>
 
-                    <Card className="p-4 bg-gradient-to-br from-background to-muted/30">
-                      <h3 className="font-semibold mb-3 flex items-center gap-2">
-                        <Package className="h-4 w-4 text-primary" />
-                        Top 5 Produtos
-                      </h3>
-                      <div className="space-y-2">
-                        {data?.produtos_mais_vendidos.slice(0, 5).map((p, i) => (
-                          <div key={i} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
-                            <span className="text-sm truncate max-w-[150px]">{p.produto}</span>
-                            <span className="text-sm font-medium text-primary">{p.vendas} vendas</span>
-                          </div>
-                        ))}
-                        {(!data?.produtos_mais_vendidos || data.produtos_mais_vendidos.length === 0) && (
-                          <p className="text-sm text-muted-foreground text-center py-4">
-                            Nenhum produto vendido ainda
-                          </p>
-                        )}
+                <Card className="p-4 bg-gradient-to-br from-background to-muted/30">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Package className="h-4 w-4 text-primary" />
+                    Top 5 Produtos
+                  </h3>
+                  <div className="space-y-2">
+                    {data?.produtos_mais_vendidos.slice(0, 5).map((p, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                        <span className="text-sm truncate max-w-[150px]">{p.produto}</span>
+                        <span className="text-sm font-medium text-primary">{p.vendas} vendas</span>
                       </div>
-                    </Card>
+                    ))}
+                    {(!data?.produtos_mais_vendidos || data.produtos_mais_vendidos.length === 0) && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Nenhum produto vendido ainda
+                      </p>
+                    )}
                   </div>
-                </div>
-              </TabsContent>
-
-              {/* Finance AI Tab */}
-              <TabsContent value="finance" className="mt-6">
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <div className="lg:col-span-1">
-                    <FinancialAIChat />
-                  </div>
-                  <div className="lg:col-span-1 space-y-4">
-                    <Card className="p-4 bg-gradient-to-br from-background to-muted/30">
-                      <h3 className="font-semibold mb-3 flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-primary" />
-                        Resumo Financeiro
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                          <p className="text-muted-foreground flex items-center gap-1">
-                            <ArrowUpRight className="h-3 w-3 text-green-500" />
-                            Receitas
-                          </p>
-                          <p className="text-xl font-bold text-green-500">
-                            R$ {financeMetrics?.totalRevenue?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
-                          </p>
-                        </div>
-                        <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-                          <p className="text-muted-foreground flex items-center gap-1">
-                            <ArrowDownRight className="h-3 w-3 text-destructive" />
-                            Despesas
-                          </p>
-                          <p className="text-xl font-bold text-destructive">
-                            R$ {financeMetrics?.totalExpenses?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
-                          </p>
-                        </div>
-                        <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
-                          <p className="text-muted-foreground">Lucro Líquido</p>
-                          <p className="text-xl font-bold text-primary">
-                            R$ {financeMetrics?.netProfit?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
-                          </p>
-                        </div>
-                        <div className="p-3 bg-muted/30 rounded-lg">
-                          <p className="text-muted-foreground">Ticket Médio</p>
-                          <p className="text-xl font-bold">
-                            R$ {financeMetrics?.avgTicket?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-
-                    <Card className="p-4 bg-gradient-to-br from-background to-muted/30">
-                      <h3 className="font-semibold mb-3 flex items-center gap-2">
-                        <PieChart className="h-4 w-4 text-primary" />
-                        Saúde do Negócio
-                      </h3>
-                      <div className="flex items-center justify-center py-4">
-                        <div className="relative w-32 h-32">
-                          <svg className="w-full h-full transform -rotate-90">
-                            <circle
-                              cx="64"
-                              cy="64"
-                              r="56"
-                              stroke="currentColor"
-                              strokeWidth="12"
-                              fill="none"
-                              className="text-muted/30"
-                            />
-                            <circle
-                              cx="64"
-                              cy="64"
-                              r="56"
-                              stroke="currentColor"
-                              strokeWidth="12"
-                              fill="none"
-                              strokeDasharray={`${(financeDiagnosis?.score || 0) * 3.52} 352`}
-                              className={`${
-                                (financeDiagnosis?.score || 0) >= 70
-                                  ? "text-green-500"
-                                  : (financeDiagnosis?.score || 0) >= 40
-                                  ? "text-yellow-500"
-                                  : "text-destructive"
-                              } transition-all duration-500`}
-                            />
-                          </svg>
-                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-3xl font-bold">{financeDiagnosis?.score || 0}</span>
-                            <span className="text-xs text-muted-foreground">de 100</span>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-                </div>
-              </TabsContent>
-
-            </Tabs>
+                </Card>
+              </div>
+            </div>
           </div>
         ) : (
           <>
@@ -410,13 +293,13 @@ export default function Analytics() {
               <Card className="p-6 bg-gradient-to-br from-background to-muted/30 border-green-500/20 hover:border-green-500/40 transition-all duration-300 hover:shadow-lg hover:shadow-green-500/5">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">Lucro Líquido</p>
-                    <p className="text-2xl font-bold mt-2 text-green-500">
-                      R$ {financeMetrics?.netProfit?.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) || '0'}
+                    <p className="text-sm text-muted-foreground">Produtos Vendidos</p>
+                    <p className="text-3xl font-bold mt-2 text-green-500">
+                      {data?.produtos_mais_vendidos.length || 0}
                     </p>
                   </div>
                   <div className="p-3 bg-green-500/10 rounded-xl">
-                    <DollarSign className="h-6 w-6 text-green-500" />
+                    <Package className="h-6 w-6 text-green-500" />
                   </div>
                 </div>
               </Card>
