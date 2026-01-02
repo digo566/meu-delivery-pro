@@ -1,32 +1,39 @@
-import { useEffect, useRef } from "react";
 import Plot from "react-plotly.js";
 
 interface OrdersChartProps {
   data: number[];
   period: "day" | "week" | "month";
+  labels?: string[];
 }
 
-export function OrdersChart({ data, period }: OrdersChartProps) {
-  const labels = period === "day" 
-    ? ["00h", "04h", "08h", "12h", "16h", "20h", "23h"]
-    : period === "week"
-    ? ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
-    : ["Sem 1", "Sem 2", "Sem 3", "Sem 4"];
+export function OrdersChart({ data, period, labels: customLabels }: OrdersChartProps) {
+  // Use custom labels if provided, otherwise fallback to default
+  const labels = customLabels || (
+    period === "day" 
+      ? ["00h", "04h", "08h", "12h", "16h", "20h", "23h"]
+      : period === "week"
+      ? ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+      : ["Sem 1", "Sem 2", "Sem 3", "Sem 4"]
+  );
+
+  // Ensure data and labels have matching lengths
+  const displayData = data.slice(0, labels.length);
+  const displayLabels = labels.slice(0, data.length);
 
   const chartData: any = [
     {
       type: "scatter3d",
       mode: "lines+markers",
-      x: labels,
-      y: data,
-      z: data.map((_, i) => i),
+      x: displayLabels,
+      y: displayData,
+      z: displayData.map((_, i) => i),
       line: {
         color: "hsl(var(--primary))",
         width: 6,
       },
       marker: {
         size: 8,
-        color: data,
+        color: displayData,
         colorscale: "Viridis",
         line: {
           color: "hsl(var(--primary))",
