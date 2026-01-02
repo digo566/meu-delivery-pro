@@ -17,9 +17,6 @@ import { FeedbackDialog } from "@/components/analytics/FeedbackDialog";
 import { AlertsNotification } from "@/components/analytics/AlertsNotification";
 import { AnalyticsAIChat } from "@/components/analytics/AnalyticsAIChat";
 import { FinancialAIChat } from "@/components/finance/FinancialAIChat";
-import { ExpensesManager } from "@/components/finance/ExpensesManager";
-import { AccountsManager } from "@/components/finance/AccountsManager";
-import { InventoryManager } from "@/components/finance/InventoryManager";
 import { ProductAnalysisChart } from "@/components/finance/ProductAnalysisChart";
 import { useAnalyticsData } from "@/hooks/useAnalyticsData";
 import { useIntelligentAnalytics } from "@/hooks/useIntelligentAnalytics";
@@ -39,8 +36,6 @@ import {
   Wallet,
   Brain,
   PieChart,
-  Receipt,
-  Boxes,
   DollarSign,
   ArrowUpRight,
   ArrowDownRight,
@@ -52,7 +47,7 @@ export default function Analytics() {
   const [dateFrom, setDateFrom] = useState<Date>(subWeeks(new Date(), 1));
   const [dateTo, setDateTo] = useState<Date>(new Date());
   const [activeTab, setActiveTab] = useState<"dashboard" | "ai">("dashboard");
-  const [aiSubTab, setAiSubTab] = useState<"analytics" | "finance" | "expenses" | "inventory">("analytics");
+  const [aiSubTab, setAiSubTab] = useState<"analytics" | "finance">("analytics");
   const [feedbackDialog, setFeedbackDialog] = useState<{
     open: boolean;
     suggestion: string;
@@ -122,8 +117,8 @@ export default function Analytics() {
         {activeTab === "ai" ? (
           <div className="space-y-6">
             {/* AI Sub-tabs */}
-            <Tabs value={aiSubTab} onValueChange={(v) => setAiSubTab(v as "analytics" | "finance" | "expenses" | "inventory")} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+            <Tabs value={aiSubTab} onValueChange={(v) => setAiSubTab(v as "analytics" | "finance")} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 lg:w-auto lg:inline-grid">
                 <TabsTrigger value="analytics" className="gap-2">
                   <Sparkles className="h-4 w-4" />
                   <span className="hidden sm:inline">Analytics IA</span>
@@ -133,16 +128,6 @@ export default function Analytics() {
                   <Wallet className="h-4 w-4" />
                   <span className="hidden sm:inline">Finanças IA</span>
                   <span className="sm:hidden">Finanças</span>
-                </TabsTrigger>
-                <TabsTrigger value="expenses" className="gap-2">
-                  <Receipt className="h-4 w-4" />
-                  <span className="hidden sm:inline">Despesas</span>
-                  <span className="sm:hidden">Desp.</span>
-                </TabsTrigger>
-                <TabsTrigger value="inventory" className="gap-2">
-                  <Boxes className="h-4 w-4" />
-                  <span className="hidden sm:inline">Estoque</span>
-                  <span className="sm:hidden">Est.</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -292,21 +277,6 @@ export default function Analytics() {
                 </div>
               </TabsContent>
 
-              {/* Expenses Tab */}
-              <TabsContent value="expenses" className="mt-6">
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <ExpensesManager />
-                  <AccountsManager />
-                </div>
-              </TabsContent>
-
-              {/* Inventory Tab */}
-              <TabsContent value="inventory" className="mt-6">
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <InventoryManager />
-                  <ProductAnalysisChart products={financeProducts} />
-                </div>
-              </TabsContent>
             </Tabs>
           </div>
         ) : (
