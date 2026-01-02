@@ -14,7 +14,7 @@ import {
   ShoppingCart,
   BarChart3
 } from "lucide-react";
-import vpexLogo from "@/assets/vpex-logo.png";
+import grapeLogo from "@/assets/grape-logo.png";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -96,8 +96,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-56 flex-col border-r bg-card sm:flex">
         <div className="flex h-14 items-center border-b px-4 gap-3">
-          <img src={vpexLogo} alt="vpex" className="w-8 h-8 object-cover" />
-          <span className="font-semibold text-foreground">vpex</span>
+          <img src={grapeLogo} alt="grape" className="w-8 h-8 object-contain" />
+          <span className="font-semibold text-foreground">grape</span>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           <NavItems />
@@ -126,8 +126,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </SheetTrigger>
             <SheetContent side="left" className="w-56 p-0">
               <div className="flex h-14 items-center border-b px-4 gap-3">
-                <img src={vpexLogo} alt="vpex" className="w-8 h-8 object-cover" />
-                <span className="font-semibold">vpex</span>
+                <img src={grapeLogo} alt="grape" className="w-8 h-8 object-contain" />
+                <span className="font-semibold">grape</span>
               </div>
               <nav className="flex-1 px-3 py-4 space-y-1">
                 <NavItems />
@@ -144,7 +144,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               </div>
             </SheetContent>
           </Sheet>
-          <span className="font-semibold">vpex</span>
+          <span className="font-semibold">grape</span>
         </header>
         
         <main className="flex-1 p-6">

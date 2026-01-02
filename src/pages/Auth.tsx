@@ -7,10 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 import { z } from "zod";
 import { sanitizeError } from "@/lib/errorHandler";
-import vpexLogo from "@/assets/vpex-logo.png";
+import grapeLogo from "@/assets/grape-logo.png";
 
 const loginSchema = z.object({
   email: z.string().trim().email("Email inválido").max(255, "Email muito longo"),
@@ -123,24 +122,23 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <img src={vpexLogo} alt="vpex" className="mx-auto w-12 h-12 object-cover mb-4" />
+          <img src={grapeLogo} alt="grape" className="mx-auto w-12 h-12 object-contain mb-4" />
           <CardTitle className="text-2xl font-bold text-foreground">
-            vpex
+            grape
           </CardTitle>
           <CardDescription>
             Gerencie seu restaurante de forma profissional
           </CardDescription>
         </CardHeader>
-
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Cadastro</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Entrar</TabsTrigger>
+              <TabsTrigger value="signup">Cadastrar</TabsTrigger>
             </TabsList>
-
+            
             <TabsContent value="login">
-              <form onSubmit={handleLogin} className="space-y-4">
+              <form onSubmit={handleLogin} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
                   <Input
@@ -157,31 +155,24 @@ const Auth = () => {
                   <Input
                     id="login-password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Entrando...
-                    </>
-                  ) : (
-                    "Entrar"
-                  )}
+                  {loading ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
             </TabsContent>
-
+            
             <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
+              <form onSubmit={handleSignup} className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-restaurant">Nome do Restaurante</Label>
+                  <Label htmlFor="restaurant-name">Nome do Restaurante</Label>
                   <Input
-                    id="signup-restaurant"
+                    id="restaurant-name"
                     type="text"
                     placeholder="Meu Restaurante"
                     value={restaurantName}
@@ -190,9 +181,9 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-phone">Telefone</Label>
+                  <Label htmlFor="phone">Telefone</Label>
                   <Input
-                    id="signup-phone"
+                    id="phone"
                     type="tel"
                     placeholder="(11) 99999-9999"
                     value={phone}
@@ -216,22 +207,14 @@ const Auth = () => {
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={6}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Criando conta...
-                    </>
-                  ) : (
-                    "Criar conta"
-                  )}
+                  {loading ? "Cadastrando..." : "Cadastrar"}
                 </Button>
               </form>
             </TabsContent>

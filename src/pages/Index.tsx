@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Users, Package, CheckCircle } from "lucide-react";
-import vpexLogo from "@/assets/vpex-logo.png";
+import { Package, Users, TrendingUp, CheckCircle } from "lucide-react";
+import grapeLogo from "@/assets/grape-logo.png";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -12,8 +12,8 @@ const Index = () => {
       <nav className="border-b bg-background">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={vpexLogo} alt="vpex" className="w-10 h-10 object-contain" />
-            <span className="font-semibold text-xl text-foreground">vpex</span>
+            <img src={grapeLogo} alt="grape" className="w-10 h-10 object-contain" />
+            <span className="font-semibold text-xl text-foreground">grape</span>
           </div>
           <Button onClick={() => navigate("/auth")}>Entrar</Button>
         </div>
@@ -75,7 +75,7 @@ const Index = () => {
         {/* Trust Section */}
         <div className="mt-24 max-w-3xl mx-auto text-center">
           <h2 className="text-2xl font-semibold text-foreground mb-8">
-            Por que escolher a vpex?
+            Por que escolher a grape?
           </h2>
           <div className="grid sm:grid-cols-2 gap-4 text-left">
             {[
@@ -98,7 +98,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t mt-24">
         <div className="container py-8 text-center text-muted-foreground text-sm">
-          © 2024 vpex. Todos os direitos reservados.
+          © 2024 grape. Todos os direitos reservados.
         </div>
       </footer>
     </div>
