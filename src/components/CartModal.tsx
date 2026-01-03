@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,6 +31,8 @@ interface CartModalProps {
   items: CartItem[];
   restaurantId: string;
   guestCartId: string | null;
+  onRemoveItem?: (itemId: string, selectedOptions?: CartItem['selectedOptions']) => void;
+  onUpdateQuantity?: (itemId: string, quantity: number, selectedOptions?: CartItem['selectedOptions']) => void;
 }
 
 const checkoutSchema = z.object({
@@ -41,7 +43,7 @@ const checkoutSchema = z.object({
   address: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres"),
 });
 
-export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, restaurantId, guestCartId }: CartModalProps) {
+export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, restaurantId, guestCartId, onRemoveItem, onUpdateQuantity }: CartModalProps) {
   const [step, setStep] = useState<'cart' | 'data' | 'payment' | 'success'>('cart');
   const [loading, setLoading] = useState(false);
   const [savedCartId, setSavedCartId] = useState<string | null>(null);
@@ -200,26 +202,88 @@ export function CartModal({ isOpen, onClose, onContinue, onCheckout, items, rest
 
         {step === 'cart' && (
           <div className="space-y-4">
-            <div className="space-y-2">
-              {items.map((item) => (
-                <div key={item.id} className="flex justify-between text-sm">
-                  <span>
-                    {item.quantity}x {item.name}
-                  </span>
-                  <span>R$ {(item.price * item.quantity).toFixed(2)}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t pt-2">
-              <div className="flex justify-between font-semibold">
-                <span>Total</span>
-                <span>R$ {total.toFixed(2)}</span>
+            {items.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>Seu carrinho está vazio</p>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                  {items.map((item, index) => (
+                    <div key={`${item.id}-${index}`} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{item.name}</p>
+                        {item.selectedOptions && item.selectedOptions.length > 0 && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {item.selectedOptions.map(o => o.optionItemName).join(', ')}
+                          </p>
+                        )}
+                        <p className="text-sm font-semibold text-primary">
+                          R$ {(item.price * item.quantity).toFixed(2)}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            if (item.quantity > 1 && onUpdateQuantity) {
+                              onUpdateQuantity(item.id, item.quantity - 1, item.selectedOptions);
+                            } else if (onRemoveItem) {
+                              onRemoveItem(item.id, item.selectedOptions);
+                            }
+                          }}
+                        >
+                          {item.quantity === 1 ? (
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          ) : (
+                            <Minus className="h-4 w-4" />
+                          )}
+                        </Button>
+                        
+                        <span className="w-8 text-center font-medium">{item.quantity}</span>
+                        
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => onUpdateQuantity?.(item.id, item.quantity + 1, item.selectedOptions)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => onRemoveItem?.(item.id, item.selectedOptions)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t pt-3">
+                  <div className="flex justify-between font-semibold text-lg">
+                    <span>Total</span>
+                    <span className="text-primary">R$ {total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="flex flex-col gap-2">
-              <Button onClick={handleFinalizarClick} size="lg" className="w-full">
+              <Button 
+                onClick={handleFinalizarClick} 
+                size="lg" 
+                className="w-full"
+                disabled={items.length === 0}
+              >
                 Finalizar Pedido
               </Button>
               <Button onClick={onContinue} variant="outline" size="lg" className="w-full">
