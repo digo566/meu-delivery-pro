@@ -8,10 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ImageUpload } from "@/components/ImageUpload";
 import { ProductOptionsManager } from "@/components/ProductOptionsManager";
+import { CategoryManager } from "@/components/CategoryManager";
+
+interface Category {
+  id: string;
+  name: string;
+}
 
 interface Product {
   id: string;
@@ -20,10 +27,12 @@ interface Product {
   price: number;
   image_url: string;
   available: boolean;
+  category_id: string | null;
 }
 
 const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -34,11 +43,31 @@ const Products = () => {
     cost_price: "",
     image_url: "",
     available: true,
+    category_id: "",
   });
 
   useEffect(() => {
     loadProducts();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("product_categories")
+        .select("*")
+        .eq("restaurant_id", user.id)
+        .order("display_order", { ascending: true });
+
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar categorias:", error);
+    }
+  };
 
   const loadProducts = async () => {
     try {
@@ -53,7 +82,7 @@ const Products = () => {
 
       if (error) throw error;
       setProducts(data || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Erro ao carregar produtos");
     } finally {
       setLoading(false);
@@ -75,6 +104,7 @@ const Products = () => {
             price: parseFloat(formData.price),
             image_url: formData.image_url,
             available: formData.available,
+            category_id: formData.category_id || null,
           })
           .eq("id", editingProduct.id);
 
@@ -88,6 +118,7 @@ const Products = () => {
           price: parseFloat(formData.price),
           image_url: formData.image_url,
           available: formData.available,
+          category_id: formData.category_id || null,
         });
 
         if (error) throw error;
@@ -125,6 +156,7 @@ const Products = () => {
         cost_price: "",
         image_url: product.image_url || "",
         available: product.available,
+        category_id: product.category_id || "",
       });
     } else {
       resetForm();
@@ -141,7 +173,14 @@ const Products = () => {
       cost_price: "",
       image_url: "",
       available: true,
+      category_id: "",
     });
+  };
+
+  const getCategoryName = (categoryId: string | null) => {
+    if (!categoryId) return null;
+    const category = categories.find(c => c.id === categoryId);
+    return category?.name || null;
   };
 
   if (loading) {
@@ -227,6 +266,25 @@ const Products = () => {
                       onUploadComplete={(url) => setFormData({ ...formData, image_url: url })}
                     />
                   </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="category">Categoria</Label>
+                    <Select
+                      value={formData.category_id}
+                      onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Sem categoria</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="flex items-center justify-between">
                     <Label htmlFor="available">Produto disponível</Label>
                     <Switch
@@ -245,6 +303,8 @@ const Products = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        <CategoryManager onCategoriesChange={loadCategories} />
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {products.length === 0 ? (
@@ -274,14 +334,19 @@ const Products = () => {
                     </div>
                   )}
                   <div className="p-6 pb-2">
-                    <CardTitle className="flex items-center justify-between">
-                      {product.name}
+                    <div className="flex items-center gap-2 mb-1">
+                      {getCategoryName(product.category_id) && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                          {getCategoryName(product.category_id)}
+                        </span>
+                      )}
                       {!product.available && (
                         <span className="text-xs bg-destructive/20 text-destructive border border-destructive/30 px-2 py-1 rounded-full">
                           Indisponível
                         </span>
                       )}
-                    </CardTitle>
+                    </div>
+                    <CardTitle>{product.name}</CardTitle>
                     <CardDescription className="line-clamp-2">{product.description}</CardDescription>
                   </div>
                 </CardHeader>
