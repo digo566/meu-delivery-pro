@@ -717,6 +717,33 @@ export type Database = {
           },
         ]
       }
+      product_categories: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          name: string
+          restaurant_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          name: string
+          restaurant_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          name?: string
+          restaurant_id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       product_option_groups: {
         Row: {
           created_at: string | null
@@ -793,6 +820,7 @@ export type Database = {
       products: {
         Row: {
           available: boolean | null
+          category_id: string | null
           cost_price: number | null
           created_at: string | null
           description: string | null
@@ -806,6 +834,7 @@ export type Database = {
         }
         Insert: {
           available?: boolean | null
+          category_id?: string | null
           cost_price?: number | null
           created_at?: string | null
           description?: string | null
@@ -819,6 +848,7 @@ export type Database = {
         }
         Update: {
           available?: boolean | null
+          category_id?: string | null
           cost_price?: number | null
           created_at?: string | null
           description?: string | null
@@ -830,7 +860,15 @@ export type Database = {
           restaurant_id?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -938,6 +976,7 @@ export type Database = {
         Args: { restaurant_id_param: string }
         Returns: {
           available: boolean
+          category_id: string
           created_at: string
           description: string
           id: string
@@ -952,6 +991,7 @@ export type Database = {
         Args: { restaurant_id_param: string }
         Returns: {
           available: boolean
+          category_id: string
           created_at: string
           description: string
           id: string

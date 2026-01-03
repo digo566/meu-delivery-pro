@@ -8,6 +8,12 @@ import { toast } from "sonner";
 import { CartModal } from "@/components/CartModal";
 import { ProductOptionsDialog } from "@/components/ProductOptionsDialog";
 
+interface Category {
+  id: string;
+  name: string;
+  display_order: number;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -15,6 +21,7 @@ interface Product {
   price: number;
   image_url: string;
   available: boolean;
+  category_id: string | null;
 }
 
 interface CartItem extends Product {
@@ -35,6 +42,7 @@ interface RestaurantInfo {
 const PublicStore = () => {
   const { restaurantId } = useParams();
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [cartModalOpen, setCartModalOpen] = useState(false);
@@ -117,6 +125,16 @@ const PublicStore = () => {
       if (productsError) throw productsError;
       
       setProducts(productsData || []);
+
+      // Load categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from("product_categories")
+        .select("*")
+        .eq("restaurant_id", restaurantId)
+        .order("display_order", { ascending: true });
+
+      if (categoriesError) throw categoriesError;
+      setCategories(categoriesData || []);
     } catch (error: unknown) {
       console.error("Erro ao carregar dados:", error);
       toast.error("Erro ao carregar dados da loja");
@@ -287,37 +305,96 @@ const PublicStore = () => {
             </div>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product) => (
-              <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                {product.image_url && (
-                  <div className="aspect-video overflow-hidden bg-muted">
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
-                  {product.description && (
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {product.description}
-                    </p>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl font-bold text-primary">
-                      R$ {product.price.toFixed(2)}
-                    </span>
-                    <Button onClick={() => handleProductClick(product)}>
-                      <ShoppingCart className="h-4 w-4 mr-2" />
-                      Adicionar
-                    </Button>
+          <div className="space-y-8">
+            {/* Products with categories */}
+            {categories.map((category) => {
+              const categoryProducts = products.filter(p => p.category_id === category.id);
+              if (categoryProducts.length === 0) return null;
+              
+              return (
+                <div key={category.id}>
+                  <h3 className="text-xl font-semibold mb-4 text-primary">{category.name}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {categoryProducts.map((product) => (
+                      <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                        {product.image_url && (
+                          <div className="aspect-video overflow-hidden bg-muted">
+                            <img
+                              src={product.image_url}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="p-4">
+                          <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
+                          {product.description && (
+                            <p className="text-sm text-muted-foreground mb-4">
+                              {product.description}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-xl font-bold text-primary">
+                              R$ {product.price.toFixed(2)}
+                            </span>
+                            <Button onClick={() => handleProductClick(product)}>
+                              <ShoppingCart className="h-4 w-4 mr-2" />
+                              Adicionar
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
                   </div>
                 </div>
-              </Card>
-            ))}
+              );
+            })}
+
+            {/* Products without category */}
+            {(() => {
+              const uncategorizedProducts = products.filter(p => !p.category_id);
+              if (uncategorizedProducts.length === 0) return null;
+              
+              return (
+                <div>
+                  {categories.length > 0 && (
+                    <h3 className="text-xl font-semibold mb-4 text-muted-foreground">Outros</h3>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {uncategorizedProducts.map((product) => (
+                      <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                        {product.image_url && (
+                          <div className="aspect-video overflow-hidden bg-muted">
+                            <img
+                              src={product.image_url}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="p-4">
+                          <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
+                          {product.description && (
+                            <p className="text-sm text-muted-foreground mb-4">
+                              {product.description}
+                            </p>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-xl font-bold text-primary">
+                              R$ {product.price.toFixed(2)}
+                            </span>
+                            <Button onClick={() => handleProductClick(product)}>
+                              <ShoppingCart className="h-4 w-4 mr-2" />
+                              Adicionar
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </main>
