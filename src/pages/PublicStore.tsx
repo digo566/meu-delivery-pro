@@ -185,6 +185,30 @@ const PublicStore = () => {
     setCartModalOpen(false);
   };
 
+  const handleRemoveItem = (itemId: string, selectedOptions?: CartItem['selectedOptions']) => {
+    const updatedCart = cart.filter(item => 
+      !(item.id === itemId && JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions))
+    );
+    setCart(updatedCart);
+    if (guestCartId) {
+      localStorage.setItem(`cartItems_${guestCartId}`, JSON.stringify(updatedCart));
+      localStorage.setItem(`cartTimestamp_${restaurantId}`, Date.now().toString());
+    }
+  };
+
+  const handleUpdateQuantity = (itemId: string, quantity: number, selectedOptions?: CartItem['selectedOptions']) => {
+    const updatedCart = cart.map(item => 
+      item.id === itemId && JSON.stringify(item.selectedOptions) === JSON.stringify(selectedOptions)
+        ? { ...item, quantity }
+        : item
+    );
+    setCart(updatedCart);
+    if (guestCartId) {
+      localStorage.setItem(`cartItems_${guestCartId}`, JSON.stringify(updatedCart));
+      localStorage.setItem(`cartTimestamp_${restaurantId}`, Date.now().toString());
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -326,6 +350,8 @@ const PublicStore = () => {
         }))}
         restaurantId={restaurantId!}
         guestCartId={guestCartId}
+        onRemoveItem={handleRemoveItem}
+        onUpdateQuantity={handleUpdateQuantity}
       />
     </div>
   );
