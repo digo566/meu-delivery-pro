@@ -11,6 +11,22 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
+const formatDeliveryTime = (min: number, max: number): string => {
+  const formatTime = (minutes: number) => {
+    if (minutes >= 60) {
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      if (remainingMinutes === 0) {
+        return `${hours}h`;
+      }
+      return `${hours}h${remainingMinutes}min`;
+    }
+    return `${minutes} min`;
+  };
+  
+  return `${formatTime(min)} - ${formatTime(max)}`;
+};
+
 interface OpeningHours {
   [key: string]: {
     open: string;
@@ -28,6 +44,8 @@ const Settings = () => {
     logo_url: "",
     cover_url: "",
     opening_hours: {} as OpeningHours,
+    min_delivery_time: 30,
+    max_delivery_time: 60,
   });
 
   const weekDays = [
@@ -67,6 +85,8 @@ const Settings = () => {
           logo_url: data.logo_url || "",
           cover_url: data.cover_url || "",
           opening_hours: hours,
+          min_delivery_time: data.min_delivery_time || 30,
+          max_delivery_time: data.max_delivery_time || 60,
         });
       }
     } catch (error: any) {
@@ -90,6 +110,8 @@ const Settings = () => {
           logo_url: profile.logo_url,
           cover_url: profile.cover_url,
           opening_hours: profile.opening_hours,
+          min_delivery_time: profile.min_delivery_time,
+          max_delivery_time: profile.max_delivery_time,
         })
         .eq("id", user.id);
 
@@ -137,6 +159,7 @@ const Settings = () => {
           <TabsList>
             <TabsTrigger value="general">Geral</TabsTrigger>
             <TabsTrigger value="branding">Marca</TabsTrigger>
+            <TabsTrigger value="delivery">Entrega</TabsTrigger>
             <TabsTrigger value="hours">Horários</TabsTrigger>
           </TabsList>
 
@@ -207,6 +230,57 @@ const Settings = () => {
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Salvar Alterações
             </Button>
+          </TabsContent>
+
+          <TabsContent value="delivery" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Tempo de Entrega</CardTitle>
+                <CardDescription>Configure o tempo estimado de entrega para seus clientes</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="min_delivery_time">Tempo Mínimo (minutos)</Label>
+                    <Input
+                      id="min_delivery_time"
+                      type="number"
+                      min="1"
+                      value={profile.min_delivery_time}
+                      onChange={(e) => setProfile({ ...profile, min_delivery_time: parseInt(e.target.value) || 0 })}
+                      placeholder="30"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Ex: 30 para "30 min"
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="max_delivery_time">Tempo Máximo (minutos)</Label>
+                    <Input
+                      id="max_delivery_time"
+                      type="number"
+                      min="1"
+                      value={profile.max_delivery_time}
+                      onChange={(e) => setProfile({ ...profile, max_delivery_time: parseInt(e.target.value) || 0 })}
+                      placeholder="60"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Ex: 60 para "1h" (será exibido como "30-60 min" ou "30 min - 1h")
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 bg-muted rounded-lg">
+                  <p className="text-sm font-medium">Prévia:</p>
+                  <p className="text-lg font-bold text-primary">
+                    {formatDeliveryTime(profile.min_delivery_time, profile.max_delivery_time)}
+                  </p>
+                </div>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Salvar Tempo de Entrega
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="hours" className="space-y-4">

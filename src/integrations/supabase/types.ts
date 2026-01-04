@@ -879,6 +879,8 @@ export type Database = {
           created_at: string | null
           id: string
           logo_url: string | null
+          max_delivery_time: number | null
+          min_delivery_time: number | null
           opening_hours: Json | null
           phone: string
           restaurant_name: string
@@ -890,6 +892,8 @@ export type Database = {
           created_at?: string | null
           id: string
           logo_url?: string | null
+          max_delivery_time?: number | null
+          min_delivery_time?: number | null
           opening_hours?: Json | null
           phone: string
           restaurant_name: string
@@ -901,6 +905,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           logo_url?: string | null
+          max_delivery_time?: number | null
+          min_delivery_time?: number | null
           opening_hours?: Json | null
           phone?: string
           restaurant_name?: string
@@ -1021,6 +1027,8 @@ export type Database = {
           cover_url: string
           id: string
           logo_url: string
+          max_delivery_time: number
+          min_delivery_time: number
           opening_hours: Json
           phone: string
           restaurant_name: string
