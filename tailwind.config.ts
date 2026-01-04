@@ -53,6 +53,14 @@ export default {
         success: "hsl(var(--success))",
         warning: "hsl(var(--warning))",
         info: "hsl(var(--info))",
+        category: {
+          pink: "hsl(var(--category-pink))",
+          red: "hsl(var(--category-red))",
+          yellow: "hsl(var(--category-yellow))",
+          orange: "hsl(var(--category-orange))",
+          purple: "hsl(var(--category-purple))",
+          green: "hsl(var(--category-green))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",

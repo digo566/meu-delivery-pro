@@ -9,19 +9,12 @@ import {
   Pencil, 
   Trash2, 
   GripVertical, 
-  Beef, 
-  Pizza, 
-  Fish, 
   Utensils, 
-  IceCream, 
-  Cake, 
-  Coffee,
-  Leaf,
   Upload,
-  X,
-  Image as ImageIcon
+  X
 } from "lucide-react";
 import { toast } from "sonner";
+import { CategorySelectionGrid } from "./CategorySelectionGrid";
 
 interface Category {
   id: string;
@@ -33,22 +26,6 @@ interface Category {
 interface CategoryManagerProps {
   onCategoriesChange?: () => void;
 }
-
-interface PopularSuggestion {
-  name: string;
-  icon: React.ReactNode;
-}
-
-const popularSuggestions: PopularSuggestion[] = [
-  { name: "Lanches", icon: <Beef className="h-8 w-8" /> },
-  { name: "Pizza", icon: <Pizza className="h-8 w-8" /> },
-  { name: "Japonesa", icon: <Fish className="h-8 w-8" /> },
-  { name: "Brasileira", icon: <Utensils className="h-8 w-8" /> },
-  { name: "Açaí", icon: <IceCream className="h-8 w-8" /> },
-  { name: "Doces", icon: <Cake className="h-8 w-8" /> },
-  { name: "Bebidas", icon: <Coffee className="h-8 w-8" /> },
-  { name: "Saudável", icon: <Leaf className="h-8 w-8" /> },
-];
 
 export const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -86,9 +63,9 @@ export const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) =>
     }
   };
 
-  const handleSuggestionClick = (suggestion: PopularSuggestion) => {
-    setCategoryName(suggestion.name);
-    setSelectedSuggestion(suggestion.name);
+  const handleSuggestionSelect = (name: string) => {
+    setCategoryName(name);
+    setSelectedSuggestion(name);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -322,43 +299,11 @@ export const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) =>
               </div>
             </div>
 
-            {/* Popular Suggestions */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium text-foreground flex items-center gap-2">
-                <ImageIcon className="h-4 w-4 text-primary" />
-                Sugestões Populares
-              </Label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {popularSuggestions.map((suggestion) => (
-                  <button
-                    key={suggestion.name}
-                    type="button"
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className={`
-                      flex flex-col items-center justify-center p-4 rounded-xl
-                      transition-all duration-200 ease-out
-                      ${selectedSuggestion === suggestion.name
-                        ? 'bg-primary/10 border-2 border-primary shadow-md scale-[1.02]'
-                        : 'bg-card border border-border shadow-sm hover:shadow-md hover:border-primary/30 hover:scale-[1.01]'
-                      }
-                    `}
-                  >
-                    <div className={`
-                      mb-2 transition-colors
-                      ${selectedSuggestion === suggestion.name ? 'text-primary' : 'text-primary/70'}
-                    `}>
-                      {suggestion.icon}
-                    </div>
-                    <span className={`
-                      text-sm font-medium transition-colors
-                      ${selectedSuggestion === suggestion.name ? 'text-primary' : 'text-foreground'}
-                    `}>
-                      {suggestion.name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* Category Selection Grid */}
+            <CategorySelectionGrid 
+              onSelect={handleSuggestionSelect}
+              selectedCategory={selectedSuggestion}
+            />
           </CardContent>
 
           {/* Save Button */}
