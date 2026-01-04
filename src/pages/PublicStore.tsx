@@ -12,6 +12,7 @@ interface Category {
   id: string;
   name: string;
   display_order: number;
+  image_url?: string | null;
 }
 
 interface Product {
@@ -126,10 +127,10 @@ const PublicStore = () => {
       
       setProducts(productsData || []);
 
-      // Load categories
+      // Load categories with image_url
       const { data: categoriesData, error: categoriesError } = await supabase
         .from("product_categories")
-        .select("*")
+        .select("id, name, display_order, image_url")
         .eq("restaurant_id", restaurantId)
         .order("display_order", { ascending: true });
 
@@ -312,8 +313,31 @@ const PublicStore = () => {
               if (categoryProducts.length === 0) return null;
               
               return (
-                <div key={category.id}>
-                  <h3 className="text-xl font-semibold mb-4 text-primary">{category.name}</h3>
+                <div key={category.id} className="space-y-4">
+                  {/* Category Header with Image */}
+                  <div className="relative overflow-hidden rounded-2xl">
+                    {category.image_url ? (
+                      <div className="relative h-32 sm:h-40">
+                        <img
+                          src={category.image_url}
+                          alt={category.name}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+                        <h3 className="absolute bottom-4 left-4 text-2xl sm:text-3xl font-bold text-white drop-shadow-lg">
+                          {category.name}
+                        </h3>
+                      </div>
+                    ) : (
+                      <div className="h-20 bg-gradient-to-r from-primary to-primary/70 flex items-center rounded-2xl">
+                        <h3 className="text-2xl font-bold text-primary-foreground px-4">
+                          {category.name}
+                        </h3>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Products Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {categoryProducts.map((product) => (
                       <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
