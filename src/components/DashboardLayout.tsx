@@ -17,6 +17,7 @@ import {
 import grapeLogo from "@/assets/grape-logo.png";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useOrderNotifications } from "@/hooks/useOrderNotifications";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -26,6 +27,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Enable order notifications with sound
+  useOrderNotifications();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
