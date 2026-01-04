@@ -12,7 +12,8 @@ import {
   LogOut,
   Menu,
   ShoppingCart,
-  BarChart3
+  BarChart3,
+  Settings
 } from "lucide-react";
 import grapeLogo from "@/assets/grape-logo.png";
 import { toast } from "sonner";
@@ -69,6 +70,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { to: "/orders", icon: ShoppingBag, label: "Pedidos" },
     { to: "/customers", icon: Users, label: "Clientes" },
     { to: "/abandoned-carts", icon: ShoppingCart, label: "Carrinhos" },
+    { to: "/settings", icon: Settings, label: "Configurações" },
   ];
 
   const NavItems = () => (

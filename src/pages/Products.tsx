@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Store, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { ImageUpload } from "@/components/ImageUpload";
 import { ProductOptionsManager } from "@/components/ProductOptionsManager";
@@ -31,9 +32,11 @@ interface Product {
 }
 
 const Products = () => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
@@ -73,7 +76,7 @@ const Products = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
+      setUserId(user.id);
       const { data, error } = await supabase
         .from("products")
         .select("*")
@@ -196,15 +199,30 @@ const Products = () => {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Produtos</h1>
             <p className="text-muted-foreground">Gerencie o cardápio do seu restaurante</p>
           </div>
-          <Button onClick={() => openDialog()}>
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Produto
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => navigate("/settings")}>
+              <Store className="mr-2 h-4 w-4" />
+              Personalizar Loja
+            </Button>
+            {userId && (
+              <Button
+                variant="outline"
+                onClick={() => window.open(`/store/${userId}`, "_blank")}
+              >
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Ver Loja
+              </Button>
+            )}
+            <Button onClick={() => openDialog()}>
+              <Plus className="mr-2 h-4 w-4" />
+              Novo Produto
+            </Button>
+          </div>
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
