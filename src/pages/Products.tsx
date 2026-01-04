@@ -208,17 +208,17 @@ const Products = () => {
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="sm:max-w-[525px]">
-            <form onSubmit={handleSubmit}>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingProduct ? "Editar Produto" : "Novo Produto"}
-                </DialogTitle>
-                <DialogDescription>
-                  Preencha as informações do produto
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
+          <DialogContent className="sm:max-w-[525px] max-h-[90vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
+              <DialogTitle>
+                {editingProduct ? "Editar Produto" : "Novo Produto"}
+              </DialogTitle>
+              <DialogDescription>
+                Preencha as informações do produto
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-1 space-y-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="name">Nome</Label>
                   <Input
@@ -234,28 +234,31 @@ const Products = () => {
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={2}
                   />
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="price">Preço (R$)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="cost_price">Custo (R$)</Label>
-                  <Input
-                    id="cost_price"
-                    type="number"
-                    step="0.01"
-                    value={formData.cost_price}
-                    onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="price">Preço (R$)</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="cost_price">Custo (R$)</Label>
+                    <Input
+                      id="cost_price"
+                      type="number"
+                      step="0.01"
+                      value={formData.cost_price}
+                      onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                    />
+                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label>Imagem do Produto</Label>
@@ -275,7 +278,7 @@ const Products = () => {
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione uma categoria" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border border-border z-50">
                       <SelectItem value="none">Sem categoria</SelectItem>
                       {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
@@ -285,7 +288,7 @@ const Products = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between py-2">
                   <Label htmlFor="available">Produto disponível</Label>
                   <Switch
                     id="available"
@@ -294,8 +297,8 @@ const Products = () => {
                   />
                 </div>
               </div>
-              <DialogFooter>
-                <Button type="submit">
+              <DialogFooter className="flex-shrink-0 pt-4 border-t border-border">
+                <Button type="submit" className="w-full sm:w-auto">
                   {editingProduct ? "Atualizar" : "Criar"}
                 </Button>
               </DialogFooter>
