@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Upload, X, Loader2 } from "lucide-react";
@@ -25,6 +25,11 @@ export const ImageUpload = ({
   const [preview, setPreview] = useState<string>(currentImageUrl || "");
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update preview when currentImageUrl changes
+  useEffect(() => {
+    setPreview(currentImageUrl || "");
+  }, [currentImageUrl]);
 
   const uploadImage = async (file: File) => {
     if (file.size > maxSizeMB * 1024 * 1024) {
