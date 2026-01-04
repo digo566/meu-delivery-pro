@@ -1,29 +1,66 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Pencil, Trash2, GripVertical } from "lucide-react";
+import { 
+  Plus, 
+  Pencil, 
+  Trash2, 
+  GripVertical, 
+  Beef, 
+  Pizza, 
+  Fish, 
+  Utensils, 
+  IceCream, 
+  Cake, 
+  Coffee,
+  Leaf,
+  Upload,
+  X,
+  Image as ImageIcon
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface Category {
   id: string;
   name: string;
   display_order: number;
+  image_url?: string | null;
 }
 
 interface CategoryManagerProps {
   onCategoriesChange?: () => void;
 }
 
+interface PopularSuggestion {
+  name: string;
+  icon: React.ReactNode;
+}
+
+const popularSuggestions: PopularSuggestion[] = [
+  { name: "Lanches", icon: <Beef className="h-8 w-8" /> },
+  { name: "Pizza", icon: <Pizza className="h-8 w-8" /> },
+  { name: "Japonesa", icon: <Fish className="h-8 w-8" /> },
+  { name: "Brasileira", icon: <Utensils className="h-8 w-8" /> },
+  { name: "Açaí", icon: <IceCream className="h-8 w-8" /> },
+  { name: "Doces", icon: <Cake className="h-8 w-8" /> },
+  { name: "Bebidas", icon: <Coffee className="h-8 w-8" /> },
+  { name: "Saudável", icon: <Leaf className="h-8 w-8" /> },
+];
+
 export const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryName, setCategoryName] = useState("");
+  const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadCategories();
@@ -49,16 +86,74 @@ export const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) =>
     }
   };
 
+  const handleSuggestionClick = (suggestion: PopularSuggestion) => {
+    setCategoryName(suggestion.name);
+    setSelectedSuggestion(suggestion.name);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const uploadImage = async (file: File, userId: string): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}/${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('category-images')
+      .upload(fileName, file);
+
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      return null;
+    }
+
+    const { data } = supabase.storage
+      .from('category-images')
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      let imageUrl: string | null = null;
+      
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile, user.id);
+      }
+
       if (editingCategory) {
+        const updateData: { name: string; image_url?: string | null } = { name: categoryName };
+        if (imageUrl) {
+          updateData.image_url = imageUrl;
+        }
+        
         const { error } = await supabase
           .from("product_categories")
-          .update({ name: categoryName })
+          .update(updateData)
           .eq("id", editingCategory.id);
 
         if (error) throw error;
@@ -72,20 +167,30 @@ export const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) =>
           restaurant_id: user.id,
           name: categoryName,
           display_order: maxOrder,
+          image_url: imageUrl,
         });
 
         if (error) throw error;
         toast.success("Categoria criada!");
       }
 
-      setDialogOpen(false);
-      setCategoryName("");
-      setEditingCategory(null);
+      resetForm();
       loadCategories();
       onCategoriesChange?.();
     } catch (error) {
       toast.error("Erro ao salvar categoria");
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const resetForm = () => {
+    setShowCreateForm(false);
+    setCategoryName("");
+    setEditingCategory(null);
+    setSelectedSuggestion(null);
+    setImageFile(null);
+    setImagePreview(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -102,16 +207,21 @@ export const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) =>
     }
   };
 
-  const openEditDialog = (category: Category) => {
+  const openEditForm = (category: Category) => {
     setEditingCategory(category);
     setCategoryName(category.name);
-    setDialogOpen(true);
+    setSelectedSuggestion(category.name);
+    setImagePreview(category.image_url || null);
+    setShowCreateForm(true);
   };
 
-  const openCreateDialog = () => {
+  const openCreateForm = () => {
     setEditingCategory(null);
     setCategoryName("");
-    setDialogOpen(true);
+    setSelectedSuggestion(null);
+    setImagePreview(null);
+    setImageFile(null);
+    setShowCreateForm(true);
   };
 
   if (loading) {
@@ -124,78 +234,219 @@ export const CategoryManager = ({ onCategoriesChange }: CategoryManagerProps) =>
     );
   }
 
+  // Create/Edit Form View
+  if (showCreateForm) {
+    return (
+      <Card className="overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-border bg-muted/30">
+          <CardTitle className="text-lg">
+            {editingCategory ? "Editar Categoria" : "Nova Categoria"}
+          </CardTitle>
+          <Button variant="ghost" size="icon" onClick={resetForm}>
+            <X className="h-5 w-5" />
+          </Button>
+        </CardHeader>
+        
+        <form onSubmit={handleSubmit}>
+          <CardContent className="p-6 space-y-6">
+            {/* Name Input */}
+            <div className="space-y-2">
+              <Label htmlFor="categoryName" className="text-sm font-medium text-foreground">
+                Nome da Categoria
+              </Label>
+              <Input
+                id="categoryName"
+                value={categoryName}
+                onChange={(e) => {
+                  setCategoryName(e.target.value);
+                  setSelectedSuggestion(null);
+                }}
+                placeholder="Ex: Pizzas, Bebidas, Sobremesas..."
+                className="h-12 text-base"
+                required
+              />
+            </div>
+
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-foreground">
+                Imagem de Capa (opcional)
+              </Label>
+              <div 
+                className={`
+                  relative border-2 border-dashed rounded-xl p-6 transition-all cursor-pointer
+                  ${imagePreview 
+                    ? 'border-primary bg-primary/5' 
+                    : 'border-border hover:border-primary/50 hover:bg-muted/50'
+                  }
+                `}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                
+                {imagePreview ? (
+                  <div className="relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeImage();
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <div className="p-3 rounded-full bg-muted mb-3">
+                      <Upload className="h-6 w-6" />
+                    </div>
+                    <p className="text-sm font-medium">Clique para fazer upload</p>
+                    <p className="text-xs mt-1">PNG, JPG até 5MB</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Popular Suggestions */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium text-foreground flex items-center gap-2">
+                <ImageIcon className="h-4 w-4 text-primary" />
+                Sugestões Populares
+              </Label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {popularSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.name}
+                    type="button"
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className={`
+                      flex flex-col items-center justify-center p-4 rounded-xl
+                      transition-all duration-200 ease-out
+                      ${selectedSuggestion === suggestion.name
+                        ? 'bg-primary/10 border-2 border-primary shadow-md scale-[1.02]'
+                        : 'bg-card border border-border shadow-sm hover:shadow-md hover:border-primary/30 hover:scale-[1.01]'
+                      }
+                    `}
+                  >
+                    <div className={`
+                      mb-2 transition-colors
+                      ${selectedSuggestion === suggestion.name ? 'text-primary' : 'text-primary/70'}
+                    `}>
+                      {suggestion.icon}
+                    </div>
+                    <span className={`
+                      text-sm font-medium transition-colors
+                      ${selectedSuggestion === suggestion.name ? 'text-primary' : 'text-foreground'}
+                    `}>
+                      {suggestion.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+
+          {/* Save Button */}
+          <div className="p-6 pt-0">
+            <Button 
+              type="submit" 
+              className="w-full h-12 text-base font-semibold"
+              disabled={!categoryName.trim() || saving}
+            >
+              {saving ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
+                  Salvando...
+                </div>
+              ) : (
+                <>
+                  {editingCategory ? "Atualizar Categoria" : "Salvar Categoria"}
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </Card>
+    );
+  }
+
+  // Categories List View
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">Categorias</CardTitle>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" onClick={openCreateDialog}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Categoria
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <form onSubmit={handleSubmit}>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingCategory ? "Editar Categoria" : "Nova Categoria"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingCategory 
-                    ? "Altere o nome da categoria" 
-                    : "Crie uma nova categoria para organizar seus produtos"}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="categoryName">Nome da Categoria</Label>
-                  <Input
-                    id="categoryName"
-                    value={categoryName}
-                    onChange={(e) => setCategoryName(e.target.value)}
-                    placeholder="Ex: Pizzas, Bebidas, Sobremesas..."
-                    required
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">
-                  {editingCategory ? "Atualizar" : "Criar"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button size="sm" onClick={openCreateForm} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Nova Categoria
+        </Button>
       </CardHeader>
       <CardContent>
         {categories.length === 0 ? (
-          <p className="text-muted-foreground text-center py-4">
-            Nenhuma categoria criada ainda
-          </p>
+          <div className="text-center py-12">
+            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+              <Utensils className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="text-muted-foreground font-medium">
+              Nenhuma categoria criada ainda
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Crie categorias para organizar seu cardápio
+            </p>
+            <Button onClick={openCreateForm} className="mt-4 gap-2">
+              <Plus className="h-4 w-4" />
+              Criar primeira categoria
+            </Button>
+          </div>
         ) : (
           <div className="space-y-2">
             {categories.map((category) => (
               <div
                 key={category.id}
-                className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                className="flex items-center justify-between p-3 rounded-xl border border-border bg-card hover:bg-accent/30 transition-all duration-200 group"
               >
                 <div className="flex items-center gap-3">
-                  <GripVertical className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{category.name}</span>
+                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+                  {category.image_url ? (
+                    <img 
+                      src={category.image_url} 
+                      alt={category.name}
+                      className="h-10 w-10 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Utensils className="h-5 w-5 text-primary" />
+                    </div>
+                  )}
+                  <span className="font-medium text-foreground">{category.name}</span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button
                     size="icon"
                     variant="ghost"
-                    onClick={() => openEditDialog(category)}
+                    className="h-8 w-8"
+                    onClick={() => openEditForm(category)}
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="hover:text-destructive"
+                    className="h-8 w-8 hover:text-destructive hover:bg-destructive/10"
                     onClick={() => handleDelete(category.id)}
                   >
                     <Trash2 className="h-4 w-4" />
