@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ShoppingCart, Store, Package } from "lucide-react";
+import { ShoppingCart, Store, Package, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { CartModal } from "@/components/CartModal";
 import { ProductOptionsDialog } from "@/components/ProductOptionsDialog";
@@ -38,6 +38,10 @@ interface CartItem extends Product {
 interface RestaurantInfo {
   restaurant_name: string;
   phone: string;
+  logo_url: string | null;
+  cover_url: string | null;
+  min_delivery_time: number;
+  max_delivery_time: number;
 }
 
 const PublicStore = () => {
@@ -116,7 +120,11 @@ const PublicStore = () => {
       const profile = profileData[0];
       setRestaurantInfo({
         restaurant_name: profile.restaurant_name,
-        phone: profile.phone || ""
+        phone: profile.phone || "",
+        logo_url: profile.logo_url || null,
+        cover_url: profile.cover_url || null,
+        min_delivery_time: profile.min_delivery_time || 30,
+        max_delivery_time: profile.max_delivery_time || 60,
       });
 
       // Use secure RPC function to get public products (excludes cost_price/profit_margin)
@@ -253,48 +261,104 @@ const PublicStore = () => {
     );
   }
 
+  const formatDeliveryTime = (min: number, max: number): string => {
+    const formatTime = (minutes: number) => {
+      if (minutes >= 60) {
+        const hours = Math.floor(minutes / 60);
+        const remainingMinutes = minutes % 60;
+        if (remainingMinutes === 0) {
+          return `${hours}h`;
+        }
+        return `${hours}h${remainingMinutes}min`;
+      }
+      return `${minutes} min`;
+    };
+    
+    return `${formatTime(min)} - ${formatTime(max)}`;
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card border-b sticky top-0 z-10 shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Store className="h-6 w-6 text-primary" />
-              <div>
-                <h1 className="text-xl font-bold">{restaurantInfo.restaurant_name}</h1>
-                <p className="text-sm text-muted-foreground">{restaurantInfo.phone}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="lg"
-                asChild
-              >
-                <Link to="/track">
-                  <Package className="h-5 w-5 mr-2" />
-                  <span className="hidden sm:inline">Acompanhar Meu Pedido</span>
-                  <span className="sm:hidden">Meu Pedido</span>
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                className="relative"
-                onClick={() => setCartModalOpen(true)}
-              >
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                <span className="hidden sm:inline">Carrinho</span>
-                {cart.length > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                    {cart.reduce((sum, item) => sum + item.quantity, 0)}
-                  </span>
-                )}
-              </Button>
-            </div>
+      {/* Hero Section with Cover Image - iFood Style */}
+      <div className="relative">
+        {/* Cover Image */}
+        <div className="h-48 sm:h-64 w-full overflow-hidden">
+          {restaurantInfo.cover_url ? (
+            <img
+              src={restaurantInfo.cover_url}
+              alt={`Capa ${restaurantInfo.restaurant_name}`}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-r from-primary to-primary/60" />
+          )}
+        </div>
+
+        {/* Logo Overlay */}
+        <div className="absolute left-1/2 -translate-x-1/2 -bottom-12 sm:-bottom-16">
+          <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-background bg-card shadow-lg overflow-hidden flex items-center justify-center">
+            {restaurantInfo.logo_url ? (
+              <img
+                src={restaurantInfo.logo_url}
+                alt={`Logo ${restaurantInfo.restaurant_name}`}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Store className="h-12 w-12 sm:h-16 sm:w-16 text-primary" />
+            )}
           </div>
         </div>
-      </header>
+
+        {/* Action Buttons */}
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="icon"
+            className="rounded-full bg-background/80 backdrop-blur-sm hover:bg-background"
+            asChild
+          >
+            <Link to="/track">
+              <Package className="h-5 w-5" />
+            </Link>
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="rounded-full bg-background/80 backdrop-blur-sm hover:bg-background relative"
+            onClick={() => setCartModalOpen(true)}
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {cart.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                {cart.reduce((sum, item) => sum + item.quantity, 0)}
+              </span>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Restaurant Info Card */}
+      <div className="container mx-auto px-4">
+        <Card className="mt-16 sm:mt-20 mb-6 shadow-lg border-0">
+          <div className="p-6 text-center">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{restaurantInfo.restaurant_name}</h1>
+            
+            <div className="flex items-center justify-center gap-2 text-muted-foreground mb-4">
+              {restaurantInfo.phone && (
+                <span className="text-sm">{restaurantInfo.phone}</span>
+              )}
+            </div>
+
+            {/* Delivery Time Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-muted rounded-full">
+              <span className="text-sm font-medium">🕐</span>
+              <span className="text-sm font-semibold text-foreground">
+                {formatDeliveryTime(restaurantInfo.min_delivery_time, restaurantInfo.max_delivery_time)}
+              </span>
+            </div>
+          </div>
+        </Card>
+      </div>
 
       <main className="container mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold mb-6">Nosso Cardápio</h2>
