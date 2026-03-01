@@ -37,8 +37,8 @@ const Index = () => {
       <nav className="relative z-20 bg-[hsl(270,65%,8%)] border-b border-white/10">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={grapeLogo} alt="grape" className="w-10 h-10 object-contain" />
-            <span className="font-bold text-2xl tracking-tight">grape</span>
+            <img src={grapeLogo} alt="grape" className="w-14 h-14 object-contain" />
+            <span className="font-bold text-3xl tracking-tight">grape</span>
           </div>
           <Button
             variant="outline"
@@ -65,17 +65,17 @@ const Index = () => {
       {/* Hero Section - Full height with background */}
       <section className="relative z-10 flex-1 flex items-center overflow-hidden">
         {/* Background grape silhouettes */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04]">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.06]">
           {[...Array(8)].map((_, i) => (
             <img
               key={i}
               src={grapeLogo}
               alt=""
-              className="absolute w-40 h-40 md:w-64 md:h-64"
+              className="absolute w-64 h-64 md:w-96 md:h-96"
               style={{
                 top: `${(i % 3) * 35 + 5}%`,
                 left: `${(i % 4) * 30 - 5}%`,
-                transform: `rotate(${i * 45}deg) scale(${0.7 + (i % 3) * 0.5})`,
+                transform: `rotate(${i * 45}deg) scale(${0.8 + (i % 3) * 0.6})`,
               }}
             />
           ))}
