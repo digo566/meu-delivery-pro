@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { CreditCard, QrCode, FileText, CheckCircle, Copy, LogOut } from "lucide-react";
+import { CreditCard, QrCode, FileText, CheckCircle, Copy, LogOut, Eye, EyeOff } from "lucide-react";
 import grapeLogo from "@/assets/grape-logo.png";
 import { useNavigate } from "react-router-dom";
 
@@ -14,9 +14,16 @@ const Subscription = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState<"form" | "payment" | "success">("form");
   const [loading, setLoading] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [billingType, setBillingType] = useState("PIX");
   const [paymentInfo, setPaymentInfo] = useState<any>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
+    // Account fields (only for new users)
+    restaurantName: "",
+    password: "",
+    // Subscription fields
     name: "",
     cpfCnpj: "",
     email: "",
@@ -31,12 +38,38 @@ const Subscription = () => {
     addressNumber: "",
   });
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session?.user);
+      if (session?.user?.email) {
+        setFormData(prev => ({ ...prev, email: session.user.email || "" }));
+      }
+      setCheckingAuth(false);
+    });
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.name || !formData.cpfCnpj || !formData.email) {
       toast.error("Preencha nome, CPF/CNPJ e email");
       return;
+    }
+
+    // Validate account fields for new users
+    if (!isLoggedIn) {
+      if (!formData.restaurantName) {
+        toast.error("Preencha o nome do restaurante");
+        return;
+      }
+      if (!formData.password || formData.password.length < 6) {
+        toast.error("A senha deve ter no mínimo 6 caracteres");
+        return;
+      }
+      if (!formData.phone) {
+        toast.error("Preencha o telefone");
+        return;
+      }
     }
 
     if (billingType === "CREDIT_CARD") {
@@ -48,6 +81,42 @@ const Subscription = () => {
 
     setLoading(true);
     try {
+      // Step 1: Create account if not logged in
+      if (!isLoggedIn) {
+        let normalizedPhone = formData.phone.replace(/\D/g, "");
+        if (!normalizedPhone.startsWith("55")) {
+          normalizedPhone = "55" + normalizedPhone;
+        }
+
+        const { data: signupData, error: signupError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: {
+              restaurant_name: formData.restaurantName,
+              phone: `+${normalizedPhone}`,
+            },
+          },
+        });
+
+        if (signupError) {
+          toast.error(signupError.message);
+          setLoading(false);
+          return;
+        }
+
+        if (!signupData.user) {
+          toast.error("Erro ao criar conta");
+          setLoading(false);
+          return;
+        }
+
+        setIsLoggedIn(true);
+        toast.success("Conta criada! Processando pagamento...");
+      }
+
+      // Step 2: Create subscription via edge function
       const payload: Record<string, unknown> = {
         action: "create-subscription",
         name: formData.name,
@@ -106,15 +175,27 @@ const Subscription = () => {
     navigate("/auth");
   };
 
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
           <img src={grapeLogo} alt="Grape" className="w-20 h-20 mx-auto mb-4 object-contain" />
-          <h1 className="text-2xl font-bold text-foreground">Ative sua Assinatura</h1>
+          <h1 className="text-2xl font-bold text-foreground">
+            {isLoggedIn ? "Ative sua Assinatura" : "Crie sua conta e Assine"}
+          </h1>
           <p className="text-muted-foreground mt-2">
-            Para acessar o painel e ativar sua loja, assine o plano Grape.
+            {isLoggedIn
+              ? "Para acessar o painel e ativar sua loja, assine o plano Grape."
+              : "Preencha seus dados, crie sua conta e ative sua loja em um só passo."}
           </p>
           <p className="text-2xl font-bold text-primary mt-3">R$ 1,00/mês</p>
           <p className="text-xs text-muted-foreground">(valor promocional de teste)</p>
@@ -123,11 +204,56 @@ const Subscription = () => {
         {step === "form" && (
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Dados para Assinatura</CardTitle>
-              <CardDescription>Preencha seus dados para gerar o pagamento</CardDescription>
+              <CardTitle className="text-lg">
+                {isLoggedIn ? "Dados para Assinatura" : "Cadastro + Assinatura"}
+              </CardTitle>
+              <CardDescription>
+                {isLoggedIn
+                  ? "Preencha seus dados para gerar o pagamento"
+                  : "Crie sua conta e gere o pagamento de uma vez"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Account fields - only for new users */}
+                {!isLoggedIn && (
+                  <div className="space-y-3 border-b pb-4">
+                    <Label className="text-base font-semibold">Dados da Conta</Label>
+                    <div className="space-y-2">
+                      <Label>Nome do Restaurante</Label>
+                      <Input
+                        placeholder="Meu Restaurante"
+                        value={formData.restaurantName}
+                        onChange={(e) => setFormData({ ...formData, restaurantName: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Senha</Label>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Mínimo 6 caracteres"
+                          value={formData.password}
+                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                          required
+                          minLength={6}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-0 top-0 h-full"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Subscription / billing fields */}
                 <div className="space-y-2">
                   <Label>Nome Completo</Label>
                   <Input
@@ -156,15 +282,17 @@ const Subscription = () => {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
+                    disabled={isLoggedIn}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Telefone (opcional)</Label>
+                  <Label>Telefone {isLoggedIn && "(opcional)"}</Label>
                   <Input
                     placeholder="(85) 99999-8888"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    required={!isLoggedIn}
                   />
                 </div>
 
@@ -256,8 +384,26 @@ const Subscription = () => {
                 )}
 
                 <Button type="submit" size="lg" className="w-full" disabled={loading}>
-                  {loading ? "Processando..." : "Assinar agora - R$ 1,00/mês"}
+                  {loading
+                    ? "Processando..."
+                    : isLoggedIn
+                    ? "Assinar agora - R$ 1,00/mês"
+                    : "Criar conta e Assinar - R$ 1,00/mês"}
                 </Button>
+
+                {!isLoggedIn && (
+                  <p className="text-center text-sm text-muted-foreground">
+                    Já tem conta?{" "}
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="p-0 h-auto text-sm"
+                      onClick={() => navigate("/auth")}
+                    >
+                      Faça login
+                    </Button>
+                  </p>
+                )}
               </form>
             </CardContent>
           </Card>
@@ -352,8 +498,8 @@ const Subscription = () => {
           <Card>
             <CardContent className="pt-8 text-center space-y-4">
               <div className="flex justify-center">
-                <div className="rounded-full bg-green-100 p-4">
-                  <CheckCircle className="h-12 w-12 text-green-600" />
+                <div className="rounded-full bg-primary/10 p-4">
+                  <CheckCircle className="h-12 w-12 text-primary" />
                 </div>
               </div>
               <h2 className="text-xl font-bold">Assinatura Ativada!</h2>
@@ -367,12 +513,18 @@ const Subscription = () => {
           </Card>
         )}
 
-        {/* Logout button */}
+        {/* Logout / back button */}
         <div className="text-center mt-6">
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
-            <LogOut className="h-4 w-4 mr-2" />
-            Sair da conta
-          </Button>
+          {isLoggedIn ? (
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="text-muted-foreground">
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair da conta
+            </Button>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => navigate("/auth")} className="text-muted-foreground">
+              Já tenho conta - Fazer login
+            </Button>
+          )}
         </div>
       </div>
     </div>
