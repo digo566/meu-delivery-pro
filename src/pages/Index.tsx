@@ -26,21 +26,25 @@ const Index = () => {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.from("leads").insert({
+      // Save lead in background
+      await supabase.from("leads").insert({
         name: formData.name,
         email: formData.email,
         whatsapp: formData.whatsapp,
         restaurant_name: formData.restaurantName,
       });
-      if (error) throw error;
-      toast.success("Cadastro realizado! Entraremos em contato em breve.");
-      setFormData({ name: "", email: "", whatsapp: "", restaurantName: "" });
     } catch (error) {
-      console.error(error);
-      toast.error("Erro ao enviar. Tente novamente.");
-    } finally {
-      setLoading(false);
+      console.error("Lead save error:", error);
     }
+    // Redirect to subscription page with pre-filled data
+    const params = new URLSearchParams({
+      name: formData.name,
+      email: formData.email,
+      phone: formData.whatsapp,
+      restaurant: formData.restaurantName,
+    });
+    navigate(`/subscription?${params.toString()}`);
+    setLoading(false);
   };
 
   return (

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -12,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 
 const Subscription = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState<"form" | "payment" | "success">("form");
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
@@ -21,13 +23,13 @@ const Subscription = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     // Account fields (only for new users)
-    restaurantName: "",
+    restaurantName: searchParams.get("restaurant") || "",
     password: "",
     // Subscription fields
-    name: "",
+    name: searchParams.get("name") || "",
     cpfCnpj: "",
-    email: "",
-    phone: "",
+    email: searchParams.get("email") || "",
+    phone: searchParams.get("phone") || "",
     // Credit card fields
     cardNumber: "",
     cardHolder: "",
