@@ -8,6 +8,12 @@ const corsHeaders = {
 
 const ASAAS_API_URL = "https://api.asaas.com/v3";
 
+// SECURITY: Price and plan are hardcoded server-side. 
+// Client CANNOT override these values.
+const PLAN_VALUE = 1.00; // R$1.00 for testing
+const PLAN_CYCLE = "MONTHLY";
+const PLAN_DESCRIPTION = "Assinatura Grape - Plano Profissional";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -67,7 +73,7 @@ serve(async (req) => {
         );
       }
 
-      // If has asaas subscription, check latest payment status
+      // SECURITY: Always verify with Asaas API, never trust local status alone
       if (subscription.asaas_subscription_id) {
         try {
           const paymentsRes = await fetch(
@@ -80,20 +86,22 @@ serve(async (req) => {
             const latestPayment = paymentsData.data[0];
             const paymentStatus = latestPayment.status;
 
-            // Update local status based on payment
-            let newStatus = subscription.status;
+            // SECURITY: Status is determined ONLY by Asaas payment status
+            let newStatus = "pending_payment";
             if (["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"].includes(paymentStatus)) {
               newStatus = "active";
             } else if (paymentStatus === "OVERDUE") {
               newStatus = "overdue";
             } else if (paymentStatus === "PENDING") {
               newStatus = "pending_payment";
+            } else if (["REFUNDED", "REFUND_REQUESTED"].includes(paymentStatus)) {
+              newStatus = "cancelled";
             }
 
             if (newStatus !== subscription.status) {
               await supabase
                 .from("subscriptions")
-                .update({ status: newStatus })
+                .update({ status: newStatus, updated_at: new Date().toISOString() })
                 .eq("id", subscription.id);
             }
 
@@ -101,7 +109,6 @@ serve(async (req) => {
               JSON.stringify({
                 status: newStatus,
                 subscription: { ...subscription, status: newStatus },
-                latestPayment,
               }),
               { headers: { ...corsHeaders, "Content-Type": "application/json" } }
             );
@@ -129,7 +136,11 @@ serve(async (req) => {
         );
       }
 
-      const cleanCpfCnpj = cpfCnpj.replace(/\D/g, "");
+      // Sanitize inputs
+      const sanitizedName = String(name).trim().substring(0, 200);
+      const sanitizedEmail = String(email).trim().substring(0, 255);
+      const cleanCpfCnpj = String(cpfCnpj).replace(/\D/g, "");
+      
       if (cleanCpfCnpj.length !== 11 && cleanCpfCnpj.length !== 14) {
         return new Response(
           JSON.stringify({ error: "CPF/CNPJ inválido" }),
@@ -137,6 +148,7 @@ serve(async (req) => {
         );
       }
 
+      // SECURITY: Only allow valid billing types
       const validBillingTypes = ["PIX", "CREDIT_CARD", "BOLETO"];
       if (!validBillingTypes.includes(billingType)) {
         return new Response(
@@ -145,12 +157,19 @@ serve(async (req) => {
         );
       }
 
-      // Check if user already has a subscription
+      // Check if user already has an active subscription
       const { data: existingSub } = await supabase
         .from("subscriptions")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
+
+      if (existingSub?.status === "active") {
+        return new Response(
+          JSON.stringify({ error: "Você já possui uma assinatura ativa" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
       let asaasCustomerId = existingSub?.asaas_customer_id;
 
@@ -160,10 +179,10 @@ serve(async (req) => {
           method: "POST",
           headers: asaasHeaders,
           body: JSON.stringify({
-            name,
+            name: sanitizedName,
             cpfCnpj: cleanCpfCnpj,
-            email,
-            mobilePhone: phone?.replace(/\D/g, "") || undefined,
+            email: sanitizedEmail,
+            mobilePhone: phone?.replace(/\D/g, "").substring(0, 15) || undefined,
             externalReference: user.id,
           }),
         });
@@ -181,6 +200,7 @@ serve(async (req) => {
       }
 
       // Step 2: Create subscription
+      // SECURITY: value, cycle, description are ALL server-side constants
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       const nextDueDate = tomorrow.toISOString().split("T")[0];
@@ -188,28 +208,28 @@ serve(async (req) => {
       const subscriptionPayload: Record<string, unknown> = {
         customer: asaasCustomerId,
         billingType,
-        value: 1.00, // R$1.00 for testing
+        value: PLAN_VALUE,
         nextDueDate,
-        cycle: "MONTHLY",
-        description: "Assinatura Grape - Plano Profissional",
+        cycle: PLAN_CYCLE,
+        description: PLAN_DESCRIPTION,
       };
 
-      // For credit card, add card info
+      // For credit card, add card info (sanitized)
       if (billingType === "CREDIT_CARD" && body.creditCard) {
         subscriptionPayload.creditCard = {
-          holderName: body.creditCard.holderName,
-          number: body.creditCard.number,
-          expiryMonth: body.creditCard.expiryMonth,
-          expiryYear: body.creditCard.expiryYear,
-          ccv: body.creditCard.ccv,
+          holderName: String(body.creditCard.holderName || "").trim().substring(0, 100),
+          number: String(body.creditCard.number || "").replace(/\D/g, "").substring(0, 19),
+          expiryMonth: String(body.creditCard.expiryMonth || "").substring(0, 2),
+          expiryYear: String(body.creditCard.expiryYear || "").substring(0, 4),
+          ccv: String(body.creditCard.ccv || "").substring(0, 4),
         };
         subscriptionPayload.creditCardHolderInfo = {
-          name,
-          email,
+          name: sanitizedName,
+          email: sanitizedEmail,
           cpfCnpj: cleanCpfCnpj,
-          phone: phone?.replace(/\D/g, "") || undefined,
-          postalCode: body.postalCode?.replace(/\D/g, "") || undefined,
-          addressNumber: body.addressNumber || undefined,
+          phone: phone?.replace(/\D/g, "").substring(0, 15) || undefined,
+          postalCode: body.postalCode ? String(body.postalCode).replace(/\D/g, "").substring(0, 8) : undefined,
+          addressNumber: body.addressNumber ? String(body.addressNumber).substring(0, 10) : undefined,
         };
       }
 
@@ -228,32 +248,14 @@ serve(async (req) => {
         );
       }
 
-      // Step 3: Save subscription locally
-      const subscriptionData = {
-        user_id: user.id,
-        asaas_customer_id: asaasCustomerId,
-        asaas_subscription_id: subData.id,
-        status: billingType === "CREDIT_CARD" ? "active" : "pending_payment",
-        billing_type: billingType,
-        value: 1.00,
-        cycle: "MONTHLY",
-        next_due_date: nextDueDate,
-      };
-
-      if (existingSub) {
-        await supabase
-          .from("subscriptions")
-          .update(subscriptionData)
-          .eq("id", existingSub.id);
-      } else {
-        await supabase
-          .from("subscriptions")
-          .insert(subscriptionData);
-      }
-
-      // Step 4: Get payment info (PIX QR code, boleto URL, etc.)
+      // Step 3: For credit card, verify the first payment actually went through
+      let initialStatus = "pending_payment";
       let paymentInfo = null;
+
       try {
+        // Wait a moment for Asaas to process the payment
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
         const paymentsRes = await fetch(
           `${ASAAS_API_URL}/subscriptions/${subData.id}/payments?limit=1`,
           { headers: asaasHeaders }
@@ -261,9 +263,21 @@ serve(async (req) => {
         const paymentsData = await paymentsRes.json();
 
         if (paymentsData.data && paymentsData.data.length > 0) {
-          const paymentId = paymentsData.data[0].id;
+          const payment = paymentsData.data[0];
+          const paymentId = payment.id;
 
-          if (billingType === "PIX") {
+          if (billingType === "CREDIT_CARD") {
+            // SECURITY: Only set active if Asaas confirms payment
+            if (["CONFIRMED", "RECEIVED", "RECEIVED_IN_CASH"].includes(payment.status)) {
+              initialStatus = "active";
+            } else {
+              initialStatus = "pending_payment";
+            }
+            paymentInfo = {
+              type: "CREDIT_CARD",
+              status: payment.status,
+            };
+          } else if (billingType === "PIX") {
             const pixRes = await fetch(
               `${ASAAS_API_URL}/payments/${paymentId}/pixQrCode`,
               { headers: asaasHeaders }
@@ -284,12 +298,7 @@ serve(async (req) => {
             paymentInfo = {
               type: "BOLETO",
               identificationField: boletoData.identificationField,
-              bankSlipUrl: paymentsData.data[0].bankSlipUrl,
-            };
-          } else if (billingType === "CREDIT_CARD") {
-            paymentInfo = {
-              type: "CREDIT_CARD",
-              status: paymentsData.data[0].status,
+              bankSlipUrl: payment.bankSlipUrl,
             };
           }
         }
@@ -297,10 +306,34 @@ serve(async (req) => {
         console.error("Error getting payment info:", e);
       }
 
+      // Step 4: Save subscription locally (via service_role - bypasses RLS)
+      const subscriptionData = {
+        user_id: user.id,
+        asaas_customer_id: asaasCustomerId,
+        asaas_subscription_id: subData.id,
+        status: initialStatus,
+        billing_type: billingType,
+        value: PLAN_VALUE,
+        cycle: PLAN_CYCLE,
+        next_due_date: nextDueDate,
+      };
+
+      if (existingSub) {
+        await supabase
+          .from("subscriptions")
+          .update(subscriptionData)
+          .eq("id", existingSub.id);
+      } else {
+        await supabase
+          .from("subscriptions")
+          .insert(subscriptionData);
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
           subscriptionId: subData.id,
+          status: initialStatus,
           paymentInfo,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }

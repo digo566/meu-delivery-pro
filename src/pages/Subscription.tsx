@@ -78,9 +78,11 @@ const Subscription = () => {
 
       setPaymentInfo(data.paymentInfo);
 
-      if (billingType === "CREDIT_CARD") {
+      if (billingType === "CREDIT_CARD" && data.status === "active") {
         toast.success("Assinatura ativada com sucesso!");
         setStep("success");
+      } else if (billingType === "CREDIT_CARD") {
+        toast.error("Pagamento não confirmado. Verifique os dados do cartão.");
       } else {
         setStep("payment");
       }
