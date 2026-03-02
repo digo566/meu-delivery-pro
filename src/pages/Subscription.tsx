@@ -199,7 +199,7 @@ const Subscription = () => {
               ? "Para acessar o painel e ativar sua loja, assine o plano Grape."
               : "Preencha seus dados, crie sua conta e ative sua loja em um só passo."}
           </p>
-          <p className="text-2xl font-bold text-primary mt-3">R$ 1,00/mês</p>
+          <p className="text-2xl font-bold text-primary mt-3">R$ 5,00/mês</p>
           <p className="text-xs text-muted-foreground">(valor promocional de teste)</p>
         </div>
 
@@ -389,8 +389,8 @@ const Subscription = () => {
                   {loading
                     ? "Processando..."
                     : isLoggedIn
-                    ? "Assinar agora - R$ 1,00/mês"
-                    : "Criar conta e Assinar - R$ 1,00/mês"}
+                    ? "Assinar agora - R$ 5,00/mês"
+                    : "Criar conta e Assinar - R$ 5,00/mês"}
                 </Button>
 
                 {!isLoggedIn && (
