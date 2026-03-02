@@ -424,7 +424,7 @@ const Subscription = () => {
             <CardContent className="space-y-4">
               {paymentInfo.type === "PIX" && (
                 <>
-                  {paymentInfo.qrCode && (
+                  {paymentInfo.qrCode ? (
                     <div className="flex justify-center">
                       <img
                         src={`data:image/png;base64,${paymentInfo.qrCode}`}
@@ -432,8 +432,15 @@ const Subscription = () => {
                         className="w-64 h-64 rounded-lg border"
                       />
                     </div>
+                  ) : (
+                    <div className="text-center p-4 border rounded-lg bg-muted/50">
+                      <QrCode className="h-16 w-16 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">
+                        QR Code sendo gerado... Aguarde alguns segundos e clique em "Verificar Pagamento".
+                      </p>
+                    </div>
                   )}
-                  {paymentInfo.copyPaste && (
+                  {paymentInfo.copyPaste ? (
                     <div className="space-y-2">
                       <Label>Pix Copia e Cola</Label>
                       <div className="flex gap-2">
@@ -443,6 +450,10 @@ const Subscription = () => {
                         </Button>
                       </div>
                     </div>
+                  ) : (
+                    <p className="text-xs text-center text-muted-foreground">
+                      Código Pix Copia e Cola ainda não disponível. Tente verificar novamente.
+                    </p>
                   )}
                 </>
               )}

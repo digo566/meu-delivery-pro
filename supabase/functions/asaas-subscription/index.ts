@@ -265,6 +265,7 @@ serve(async (req) => {
         if (paymentsData.data && paymentsData.data.length > 0) {
           const payment = paymentsData.data[0];
           const paymentId = payment.id;
+          console.log("First payment found:", paymentId, "status:", payment.status, "billingType:", billingType);
 
           if (billingType === "CREDIT_CARD") {
             // SECURITY: Only set active if Asaas confirms payment
@@ -278,17 +279,26 @@ serve(async (req) => {
               status: payment.status,
             };
           } else if (billingType === "PIX") {
-            const pixRes = await fetch(
-              `${ASAAS_API_URL}/payments/${paymentId}/pixQrCode`,
-              { headers: asaasHeaders }
-            );
-            const pixData = await pixRes.json();
-            paymentInfo = {
-              type: "PIX",
-              qrCode: pixData.encodedImage,
-              copyPaste: pixData.payload,
-              expirationDate: pixData.expirationDate,
-            };
+            try {
+              const pixRes = await fetch(
+                `${ASAAS_API_URL}/payments/${paymentId}/pixQrCode`,
+                { headers: asaasHeaders }
+              );
+              const pixData = await pixRes.json();
+              console.log("Pix QR Code response status:", pixRes.status, "data:", JSON.stringify(pixData));
+              if (!pixRes.ok) {
+                console.error("Pix QR Code error:", pixData);
+              }
+              paymentInfo = {
+                type: "PIX",
+                qrCode: pixData.encodedImage || null,
+                copyPaste: pixData.payload || null,
+                expirationDate: pixData.expirationDate || null,
+              };
+            } catch (pixErr) {
+              console.error("Error fetching Pix QR code:", pixErr);
+              paymentInfo = { type: "PIX", qrCode: null, copyPaste: null, expirationDate: null };
+            }
           } else if (billingType === "BOLETO") {
             const boletoRes = await fetch(
               `${ASAAS_API_URL}/payments/${paymentId}/identificationField`,
