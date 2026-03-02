@@ -10,7 +10,7 @@ const ASAAS_API_URL = "https://api.asaas.com/v3";
 
 // SECURITY: Price and plan are hardcoded server-side. 
 // Client CANNOT override these values.
-const PLAN_VALUE = 1.00; // R$1.00 for testing
+const PLAN_VALUE = 5.00; // R$5.00 (mínimo Asaas para Boleto)
 const PLAN_CYCLE = "MONTHLY";
 const PLAN_DESCRIPTION = "Assinatura Grape - Plano Profissional";
 
