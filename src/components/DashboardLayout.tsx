@@ -106,7 +106,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-56 flex-col border-r bg-card sm:flex">
         <div className="flex h-14 items-center border-b px-4 gap-3">
-          <img src={grapeLogo} alt="grape" className="w-8 h-8 object-contain" />
+          <img src={grapeLogo} alt="grape" className="w-10 h-10 object-contain" />
           <span className="font-semibold text-foreground">grape</span>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
@@ -136,7 +136,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </SheetTrigger>
             <SheetContent side="left" className="w-56 p-0">
               <div className="flex h-14 items-center border-b px-4 gap-3">
-                <img src={grapeLogo} alt="grape" className="w-8 h-8 object-contain" />
+                <img src={grapeLogo} alt="grape" className="w-10 h-10 object-contain" />
                 <span className="font-semibold">grape</span>
               </div>
               <nav className="flex-1 px-3 py-4 space-y-1">
