@@ -951,6 +951,48 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          asaas_customer_id: string | null
+          asaas_subscription_id: string | null
+          billing_type: string | null
+          created_at: string | null
+          cycle: string | null
+          id: string
+          next_due_date: string | null
+          status: string
+          updated_at: string | null
+          user_id: string
+          value: number
+        }
+        Insert: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          billing_type?: string | null
+          created_at?: string | null
+          cycle?: string | null
+          id?: string
+          next_due_date?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+          value?: number
+        }
+        Update: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
+          billing_type?: string | null
+          created_at?: string | null
+          cycle?: string | null
+          id?: string
+          next_due_date?: string | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
       suggestion_feedback: {
         Row: {
           created_at: string
@@ -1016,6 +1058,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_restaurant_subscription: {
+        Args: { restaurant_id_param: string }
+        Returns: boolean
+      }
       generate_tracking_code: { Args: never; Returns: string }
       get_public_products: {
         Args: { restaurant_id_param: string }
