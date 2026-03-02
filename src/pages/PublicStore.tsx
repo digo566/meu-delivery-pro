@@ -55,6 +55,7 @@ const PublicStore = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [restaurantInfo, setRestaurantInfo] = useState<RestaurantInfo | null>(null);
   const [guestCartId, setGuestCartId] = useState<string | null>(null);
+  const [storeBlocked, setStoreBlocked] = useState(false);
 
   useEffect(() => {
     if (restaurantId) {
@@ -105,6 +106,16 @@ const PublicStore = () => {
 
   const loadStoreData = async () => {
     try {
+      // Check subscription status first
+      const { data: hasSubscription, error: subError } = await supabase
+        .rpc("check_restaurant_subscription", { restaurant_id_param: restaurantId });
+
+      if (!subError && hasSubscription === false) {
+        setStoreBlocked(true);
+        setLoading(false);
+        return;
+      }
+
       // Use secure RPC function to get public profile data (respects show_phone_publicly setting)
       const { data: profileData, error: profileError } = await supabase
         .rpc("get_public_profile_with_phone", { profile_id: restaurantId });
@@ -243,6 +254,20 @@ const PublicStore = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Carregando loja...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (storeBlocked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="p-8 text-center max-w-md">
+          <Store className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+          <h1 className="text-2xl font-bold mb-2">Loja Temporariamente Indisponível</h1>
+          <p className="text-muted-foreground">
+            Esta loja está temporariamente fora do ar. Tente novamente mais tarde.
+          </p>
+        </Card>
       </div>
     );
   }

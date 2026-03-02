@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "@/components/NavLink";
 import { 
@@ -34,6 +35,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // Enable order notifications with sound
   useOrderNotifications();
   const { isAdmin } = useAdminCheck();
+  const { loading: subLoading, hasActiveSubscription } = useSubscription();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -96,12 +98,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     </>
   );
 
-  if (loading) {
+  if (loading || subLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
       </div>
     );
+  }
+
+  // Redirect to subscription page if no active subscription (admins bypass)
+  if (!isAdmin && !hasActiveSubscription) {
+    navigate("/subscription");
+    return null;
   }
 
   return (
