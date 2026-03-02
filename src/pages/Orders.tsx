@@ -190,7 +190,7 @@ const Orders = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {filteredOrders.map((order) => (
               <button
                 key={order.id}
@@ -198,31 +198,31 @@ const Orders = () => {
                 className="text-left group"
               >
                 <Card className="h-full transition-all hover:shadow-md hover:border-primary/40 cursor-pointer">
-                  <CardContent className="p-3 space-y-2">
-                    <div className="flex items-center justify-between gap-1">
-                      <h3 className="text-xs font-semibold truncate flex-1">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-sm font-semibold truncate flex-1">
                         {order.clients?.name || "Sem nome"}
                       </h3>
                     </div>
 
                     <Badge
                       variant="outline"
-                      className={`${statusColors[order.status]} text-[10px] px-1.5 py-0 w-full justify-center`}
+                      className={`${statusColors[order.status]} text-xs px-2 py-0.5 w-full justify-center`}
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full mr-1 ${statusDot[order.status]}`} />
+                      <span className={`w-2 h-2 rounded-full mr-1.5 ${statusDot[order.status]}`} />
                       {statusLabels[order.status]}
                     </Badge>
 
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">
-                        🛒 {order.order_items.length}
+                      <span className="text-xs text-muted-foreground">
+                        🛒 {order.order_items.length} {order.order_items.length === 1 ? "item" : "itens"}
                       </span>
-                      <span className="text-xs font-bold text-primary">
+                      <span className="text-sm font-bold text-primary">
                         R$ {Number(order.total_amount).toFixed(2)}
                       </span>
                     </div>
 
-                    <p className="text-[10px] text-muted-foreground text-center">
+                    <p className="text-xs text-muted-foreground text-center">
                       {format(new Date(order.created_at), "dd/MM HH:mm")}
                     </p>
                   </CardContent>
