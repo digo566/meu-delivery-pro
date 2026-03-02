@@ -36,8 +36,8 @@ const Index = () => {
       {/* Top Nav */}
       <nav className="relative z-20 bg-[hsl(270,65%,8%)] border-b border-white/10">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src={grapeLogo} alt="grape" className="w-[100px] h-[100px] object-contain" />
+          <div className="flex items-center gap-1">
+            <img src={grapeLogo} alt="grape" className="w-[100px] h-[100px] object-contain -mr-2" />
             <span className="font-bold text-3xl tracking-tight">grape</span>
           </div>
           <Button
