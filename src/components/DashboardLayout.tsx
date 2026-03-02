@@ -51,6 +51,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         navigate("/auth");
       }
       setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+      navigate("/auth");
     });
 
     return () => subscription.unsubscribe();
