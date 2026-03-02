@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Search, ShoppingBag, MessageCircle } from "lucide-react";
 
 interface Order {
   id: string;
@@ -33,9 +36,39 @@ interface Order {
   }[];
 }
 
+const statusColors: Record<string, string> = {
+  pending: "bg-yellow-500/15 text-yellow-600 border-yellow-500/30",
+  preparing: "bg-blue-500/15 text-blue-600 border-blue-500/30",
+  on_the_way: "bg-purple-500/15 text-purple-600 border-purple-500/30",
+  ready: "bg-green-500/15 text-green-600 border-green-500/30",
+  delivered: "bg-muted text-muted-foreground border-border",
+  cancelled: "bg-red-500/15 text-red-600 border-red-500/30",
+};
+
+const statusDot: Record<string, string> = {
+  pending: "bg-yellow-500",
+  preparing: "bg-blue-500",
+  on_the_way: "bg-purple-500",
+  ready: "bg-green-500",
+  delivered: "bg-muted-foreground",
+  cancelled: "bg-red-500",
+};
+
+const statusLabels: Record<string, string> = {
+  pending: "Pendente",
+  preparing: "Em Preparo",
+  on_the_way: "A Caminho",
+  ready: "Pronto",
+  delivered: "Entregue",
+  cancelled: "Cancelado",
+};
+
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   useEffect(() => {
     loadOrders();
@@ -73,30 +106,24 @@ const Orders = () => {
         .eq("id", orderId);
 
       if (error) throw error;
-      toast.success("Status atualizado com sucesso!");
+      toast.success("Status atualizado!");
       loadOrders();
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder((prev) => prev ? { ...prev, status: newStatus } : null);
+      }
     } catch (error: any) {
       toast.error("Erro ao atualizar status");
     }
   };
 
-  const statusColors: Record<string, string> = {
-    pending: "border-yellow-500/30 bg-yellow-500/20 text-yellow-400",
-    preparing: "border-blue-500/30 bg-blue-500/20 text-blue-400",
-    on_the_way: "border-purple-500/30 bg-purple-500/20 text-purple-400",
-    ready: "border-green-500/30 bg-green-500/20 text-green-400",
-    delivered: "border-muted-foreground/30 bg-muted/50 text-muted-foreground",
-    cancelled: "border-red-500/30 bg-red-500/20 text-red-400",
-  };
-
-  const statusLabels: Record<string, string> = {
-    pending: "Pendente",
-    preparing: "Em Preparo",
-    on_the_way: "A Caminho",
-    ready: "Pronto",
-    delivered: "Entregue",
-    cancelled: "Cancelado",
-  };
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch =
+      !searchTerm ||
+      order.clients?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.tracking_code?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === "all" || order.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
 
   if (loading) {
     return (
@@ -112,117 +139,208 @@ const Orders = () => {
     <DashboardLayout>
       <div className="space-y-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Pedidos</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Pedidos</h1>
           <p className="text-sm text-muted-foreground">Gerencie os pedidos do seu restaurante</p>
         </div>
 
-        {orders.length === 0 ? (
+        {/* Search & Filters */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por cliente ou código..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8 h-9 text-sm"
+            />
+          </div>
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-full sm:w-[160px] h-9 text-sm">
+              <SelectValue placeholder="Filtrar status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="pending">Pendente</SelectItem>
+              <SelectItem value="preparing">Em Preparo</SelectItem>
+              <SelectItem value="on_the_way">A Caminho</SelectItem>
+              <SelectItem value="ready">Pronto</SelectItem>
+              <SelectItem value="delivered">Entregue</SelectItem>
+              <SelectItem value="cancelled">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Status Legend */}
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          <span className="font-medium">Status:</span>
+          {Object.entries(statusLabels).map(([key, label]) => (
+            <span key={key} className="flex items-center gap-1">
+              <span className={`w-2 h-2 rounded-full ${statusDot[key]}`} />
+              {label}
+            </span>
+          ))}
+        </div>
+
+        {/* Orders Grid */}
+        {filteredOrders.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <p className="text-muted-foreground">Nenhum pedido realizado ainda</p>
+              <ShoppingBag className="h-10 w-10 text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">Nenhum pedido encontrado</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-            {orders.map((order) => (
-              <Card key={order.id} className="flex flex-col">
-                <CardHeader className="p-3 pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <CardTitle className="text-sm font-semibold truncate">
-                        {order.clients?.name || "Cliente não identificado"}
-                      </CardTitle>
-                      <CardDescription className="text-xs mt-0.5">
-                        {format(new Date(order.created_at), "dd/MM HH:mm", { locale: ptBR })}
-                      </CardDescription>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+            {filteredOrders.map((order) => (
+              <button
+                key={order.id}
+                onClick={() => setSelectedOrder(order)}
+                className="text-left group"
+              >
+                <Card className="h-full transition-all hover:shadow-md hover:border-primary/40 cursor-pointer">
+                  <CardContent className="p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-1">
+                      <h3 className="text-xs font-semibold truncate flex-1">
+                        {order.clients?.name || "Sem nome"}
+                      </h3>
                     </div>
-                    <Badge className={`${statusColors[order.status]} text-[10px] px-1.5 py-0.5 shrink-0`}>
+
+                    <Badge
+                      variant="outline"
+                      className={`${statusColors[order.status]} text-[10px] px-1.5 py-0 w-full justify-center`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full mr-1 ${statusDot[order.status]}`} />
                       {statusLabels[order.status]}
                     </Badge>
-                  </div>
-                  <code className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/30 w-fit">
-                    {order.tracking_code}
-                  </code>
-                </CardHeader>
-                <CardContent className="p-3 pt-0 flex-1 flex flex-col gap-2 text-xs">
-                  {order.clients?.address && (
-                    <p className="text-muted-foreground truncate" title={order.clients.address}>
-                      📍 {order.clients.address}
+
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">
+                        🛒 {order.order_items.length}
+                      </span>
+                      <span className="text-xs font-bold text-primary">
+                        R$ {Number(order.total_amount).toFixed(2)}
+                      </span>
+                    </div>
+
+                    <p className="text-[10px] text-muted-foreground text-center">
+                      {format(new Date(order.created_at), "dd/MM HH:mm")}
                     </p>
-                  )}
-
-                  <div className="space-y-0.5 flex-1">
-                    {order.order_items.slice(0, 3).map((item, index) => (
-                      <div key={index} className="flex justify-between">
-                        <span className="truncate mr-2">
-                          {item.quantity}x {item.products?.name || "—"}
-                        </span>
-                        <span className="shrink-0 text-muted-foreground">R$ {Number(item.unit_price).toFixed(2)}</span>
-                      </div>
-                    ))}
-                    {order.order_items.length > 3 && (
-                      <p className="text-muted-foreground">+{order.order_items.length - 3} itens</p>
-                    )}
-                  </div>
-
-                  {order.payment_method && (
-                    <p className="text-muted-foreground capitalize">
-                      💳 {order.payment_method}
-                      {order.payment_method === "dinheiro" && order.needs_change && order.change_amount && (
-                        <span> • Troco p/ R$ {Number(order.change_amount).toFixed(2)}</span>
-                      )}
-                    </p>
-                  )}
-
-                  {order.notes && (
-                    <p className="text-muted-foreground bg-muted p-1.5 rounded text-[11px] line-clamp-2">
-                      📝 {order.notes}
-                    </p>
-                  )}
-
-                  <div className="flex items-center justify-between pt-2 border-t border-border mt-auto">
-                    <p className="text-base font-bold">
-                      R$ {Number(order.total_amount).toFixed(2)}
-                    </p>
-                    <Select
-                      value={order.status}
-                      onValueChange={(value) => updateOrderStatus(order.id, value)}
-                    >
-                      <SelectTrigger className="w-[130px] h-7 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pendente</SelectItem>
-                        <SelectItem value="preparing">Em Preparo</SelectItem>
-                        <SelectItem value="on_the_way">A Caminho</SelectItem>
-                        <SelectItem value="ready">Pronto</SelectItem>
-                        <SelectItem value="delivered">Entregue</SelectItem>
-                        <SelectItem value="cancelled">Cancelado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {order.clients?.phone && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full h-7 text-xs"
-                      onClick={() => {
-                        window.open(
-                          `https://wa.me/${order.clients?.phone.replace(/\D/g, "")}?text=Olá%20${order.clients?.name},%20seu%20pedido%20está%20${statusLabels[order.status]}!`,
-                          "_blank"
-                        );
-                      }}
-                    >
-                      WhatsApp
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </button>
             ))}
           </div>
         )}
       </div>
+
+      {/* Order Detail Dialog */}
+      <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+        <DialogContent className="max-w-md">
+          {selectedOrder && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-between pr-6">
+                  <span>{selectedOrder.clients?.name || "Cliente não identificado"}</span>
+                  <Badge className={statusColors[selectedOrder.status]}>
+                    {statusLabels[selectedOrder.status]}
+                  </Badge>
+                </DialogTitle>
+                <p className="text-xs text-muted-foreground">
+                  {format(new Date(selectedOrder.created_at), "PPpp", { locale: ptBR })}
+                </p>
+                <code className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/30 w-fit">
+                  {selectedOrder.tracking_code}
+                </code>
+              </DialogHeader>
+
+              <div className="space-y-4 mt-2">
+                {selectedOrder.clients?.address && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">📍 Endereço</p>
+                    <p className="text-sm">{selectedOrder.clients.address}</p>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">🛒 Itens do Pedido</p>
+                  <div className="bg-muted/50 rounded-lg p-2 space-y-1">
+                    {selectedOrder.order_items.map((item, index) => (
+                      <div key={index} className="flex justify-between text-sm">
+                        <span>{item.quantity}x {item.products?.name || "—"}</span>
+                        <span className="text-muted-foreground">
+                          R$ {(item.quantity * Number(item.unit_price)).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedOrder.payment_method && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">💳 Pagamento</p>
+                    <p className="text-sm capitalize">
+                      {selectedOrder.payment_method}
+                      {selectedOrder.payment_method === "dinheiro" && selectedOrder.needs_change && selectedOrder.change_amount && (
+                        <span className="text-muted-foreground">
+                          {" "}• Troco para R$ {Number(selectedOrder.change_amount).toFixed(2)}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                )}
+
+                {selectedOrder.notes && (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">📝 Observações</p>
+                    <p className="text-sm bg-muted p-2 rounded-md">{selectedOrder.notes}</p>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-3 border-t">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="text-xl font-bold">
+                      R$ {Number(selectedOrder.total_amount).toFixed(2)}
+                    </p>
+                  </div>
+                  <Select
+                    value={selectedOrder.status}
+                    onValueChange={(value) => updateOrderStatus(selectedOrder.id, value)}
+                  >
+                    <SelectTrigger className="w-[140px] h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pendente</SelectItem>
+                      <SelectItem value="preparing">Em Preparo</SelectItem>
+                      <SelectItem value="on_the_way">A Caminho</SelectItem>
+                      <SelectItem value="ready">Pronto</SelectItem>
+                      <SelectItem value="delivered">Entregue</SelectItem>
+                      <SelectItem value="cancelled">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {selectedOrder.clients?.phone && (
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => {
+                      window.open(
+                        `https://wa.me/${selectedOrder.clients?.phone.replace(/\D/g, "")}?text=Olá%20${selectedOrder.clients?.name},%20seu%20pedido%20está%20${statusLabels[selectedOrder.status]}!`,
+                        "_blank"
+                      );
+                    }}
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Enviar WhatsApp
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 };
