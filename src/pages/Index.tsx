@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { CheckCircle, Zap, Shield, BarChart3, Smartphone, Clock } from "lucide-react";
 import grapeLogo from "@/assets/grape-logo.png";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -24,11 +25,22 @@ const Index = () => {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const { error } = await supabase.from("leads").insert({
+        name: formData.name,
+        email: formData.email,
+        whatsapp: formData.whatsapp,
+        restaurant_name: formData.restaurantName,
+      });
+      if (error) throw error;
       toast.success("Cadastro realizado! Entraremos em contato em breve.");
       setFormData({ name: "", email: "", whatsapp: "", restaurantName: "" });
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro ao enviar. Tente novamente.");
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
   return (
