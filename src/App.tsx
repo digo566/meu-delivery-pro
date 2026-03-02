@@ -16,6 +16,7 @@ import Analytics from "./pages/Analytics";
 import Finance from "./pages/Finance";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/track" element={<TrackOrder />} />
           <Route path="/store/:restaurantId" element={<PublicStore />} />
           <Route path="/r/:restaurantId" element={<PublicStore />} />
+          <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

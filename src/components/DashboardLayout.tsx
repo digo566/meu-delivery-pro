@@ -13,12 +13,14 @@ import {
   Menu,
   ShoppingCart,
   BarChart3,
-  Settings
+  Settings,
+  Crown
 } from "lucide-react";
 import grapeLogo from "@/assets/grape-logo.png";
 import { toast } from "sonner";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useOrderNotifications } from "@/hooks/useOrderNotifications";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -31,6 +33,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   // Enable order notifications with sound
   useOrderNotifications();
+  const { isAdmin } = useAdminCheck();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -71,6 +74,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { to: "/customers", icon: Users, label: "Clientes" },
     { to: "/abandoned-carts", icon: ShoppingCart, label: "Carrinhos" },
     { to: "/settings", icon: Settings, label: "Configurações" },
+    ...(isAdmin ? [{ to: "/admin", icon: Crown, label: "Admin Grape" }] : []),
   ];
 
   const NavItems = () => (
