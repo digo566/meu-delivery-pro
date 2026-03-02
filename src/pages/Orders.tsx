@@ -110,101 +110,85 @@ const Orders = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
+      <div className="space-y-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Pedidos</h1>
-          <p className="text-muted-foreground">Gerencie os pedidos do seu restaurante</p>
+          <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Pedidos</h1>
+          <p className="text-sm text-muted-foreground">Gerencie os pedidos do seu restaurante</p>
         </div>
 
-        <div className="grid gap-4">
-          {orders.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <p className="text-muted-foreground">
-                  Nenhum pedido realizado ainda
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            orders.map((order) => (
-              <Card key={order.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg">
+        {orders.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <p className="text-muted-foreground">Nenhum pedido realizado ainda</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {orders.map((order) => (
+              <Card key={order.id} className="flex flex-col">
+                <CardHeader className="p-3 pb-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="text-sm font-semibold truncate">
                         {order.clients?.name || "Cliente não identificado"}
                       </CardTitle>
-                      <CardDescription>
-                        {format(new Date(order.created_at), "PPpp", { locale: ptBR })}
+                      <CardDescription className="text-xs mt-0.5">
+                        {format(new Date(order.created_at), "dd/MM HH:mm", { locale: ptBR })}
                       </CardDescription>
-                      <div className="pt-1">
-                        <code className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/30">
-                          Código: {order.tracking_code}
-                        </code>
-                      </div>
                     </div>
-                    <Badge className={statusColors[order.status]}>
+                    <Badge className={`${statusColors[order.status]} text-[10px] px-1.5 py-0.5 shrink-0`}>
                       {statusLabels[order.status]}
                     </Badge>
                   </div>
+                  <code className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full border border-primary/30 w-fit">
+                    {order.tracking_code}
+                  </code>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="p-3 pt-0 flex-1 flex flex-col gap-2 text-xs">
                   {order.clients?.address && (
-                    <div className="space-y-1 pb-2 border-b">
-                      <p className="text-sm text-muted-foreground">Endereço de Entrega</p>
-                      <p className="text-sm font-medium">{order.clients.address}</p>
-                    </div>
+                    <p className="text-muted-foreground truncate" title={order.clients.address}>
+                      📍 {order.clients.address}
+                    </p>
                   )}
 
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-sm">Itens do Pedido:</h4>
-                    <div className="space-y-1">
-                      {order.order_items.map((item, index) => (
-                        <div key={index} className="flex justify-between text-sm">
-                          <span>
-                            {item.quantity}x {item.products?.name || "Produto desconhecido"}
-                          </span>
-                          <span>R$ {Number(item.unit_price).toFixed(2)}</span>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="space-y-0.5 flex-1">
+                    {order.order_items.slice(0, 3).map((item, index) => (
+                      <div key={index} className="flex justify-between">
+                        <span className="truncate mr-2">
+                          {item.quantity}x {item.products?.name || "—"}
+                        </span>
+                        <span className="shrink-0 text-muted-foreground">R$ {Number(item.unit_price).toFixed(2)}</span>
+                      </div>
+                    ))}
+                    {order.order_items.length > 3 && (
+                      <p className="text-muted-foreground">+{order.order_items.length - 3} itens</p>
+                    )}
                   </div>
 
                   {order.payment_method && (
-                    <div className="space-y-1 pt-2 border-t">
-                      <p className="text-sm text-muted-foreground">Forma de Pagamento</p>
-                      <p className="text-sm font-medium capitalize">
-                        {order.payment_method}
-                        {order.payment_method === "dinheiro" && order.needs_change && order.change_amount && (
-                          <span className="text-muted-foreground">
-                            {" "}• Troco para R$ {Number(order.change_amount).toFixed(2)}
-                          </span>
-                        )}
-                      </p>
-                    </div>
+                    <p className="text-muted-foreground capitalize">
+                      💳 {order.payment_method}
+                      {order.payment_method === "dinheiro" && order.needs_change && order.change_amount && (
+                        <span> • Troco p/ R$ {Number(order.change_amount).toFixed(2)}</span>
+                      )}
+                    </p>
                   )}
 
                   {order.notes && (
-                    <div className="space-y-1 pt-2 border-t">
-                      <p className="text-sm text-muted-foreground">Observações do Cliente</p>
-                      <p className="text-sm font-medium bg-muted p-2 rounded-md">
-                        {order.notes}
-                      </p>
-                    </div>
+                    <p className="text-muted-foreground bg-muted p-1.5 rounded text-[11px] line-clamp-2">
+                      📝 {order.notes}
+                    </p>
                   )}
 
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Total</p>
-                      <p className="text-2xl font-bold">
-                        R$ {Number(order.total_amount).toFixed(2)}
-                      </p>
-                    </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-border mt-auto">
+                    <p className="text-base font-bold">
+                      R$ {Number(order.total_amount).toFixed(2)}
+                    </p>
                     <Select
                       value={order.status}
                       onValueChange={(value) => updateOrderStatus(order.id, value)}
                     >
-                      <SelectTrigger className="w-[180px]">
+                      <SelectTrigger className="w-[130px] h-7 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -221,7 +205,8 @@ const Orders = () => {
                   {order.clients?.phone && (
                     <Button
                       variant="outline"
-                      className="w-full"
+                      size="sm"
+                      className="w-full h-7 text-xs"
                       onClick={() => {
                         window.open(
                           `https://wa.me/${order.clients?.phone.replace(/\D/g, "")}?text=Olá%20${order.clients?.name},%20seu%20pedido%20está%20${statusLabels[order.status]}!`,
@@ -229,14 +214,14 @@ const Orders = () => {
                         );
                       }}
                     >
-                      Enviar mensagem no WhatsApp
+                      WhatsApp
                     </Button>
                   )}
                 </CardContent>
               </Card>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
