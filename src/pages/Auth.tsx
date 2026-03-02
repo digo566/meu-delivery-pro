@@ -146,7 +146,7 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <img src={grapeLogo} alt="grape" className="mx-auto w-[62px] h-[62px] object-contain mb-4" />
+          <img src={grapeLogo} alt="grape" className="mx-auto w-[120px] h-[120px] object-contain mb-4" />
           <CardTitle className="text-2xl font-bold text-foreground">
             grape
           </CardTitle>
