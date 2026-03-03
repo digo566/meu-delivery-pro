@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Lock, Eye, EyeOff, CheckCircle2, XCircle, ArrowLeft, ShieldCheck } from
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -20,6 +21,7 @@ const ResetPassword = () => {
   const [isRecovery, setIsRecovery] = useState(false);
   const [checking, setChecking] = useState(true);
   const [success, setSuccess] = useState(false);
+  const resolved = useRef(false);
 
   const hasMinLength = password.length >= 6;
   const hasUpperCase = /[A-Z]/.test(password);
@@ -27,52 +29,75 @@ const ResetPassword = () => {
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
 
   useEffect(() => {
-    let resolved = false;
-    const resolve = () => {
-      if (!resolved) {
-        resolved = true;
+    const markRecovery = () => {
+      if (!resolved.current) {
+        resolved.current = true;
         setIsRecovery(true);
         setChecking(false);
       }
     };
 
-    // 1. Check URL hash for recovery token
-    const hash = window.location.hash;
-    if (hash) {
-      const hashParams = new URLSearchParams(hash.substring(1));
-      const type = hashParams.get("type");
-      if (type === "recovery") {
-        resolve();
+    const markInvalid = () => {
+      if (!resolved.current) {
+        resolved.current = true;
+        setIsRecovery(false);
+        setChecking(false);
       }
+    };
+
+    // Check if URL has a code param (PKCE flow) or hash (implicit flow)
+    const hasCode = searchParams.has("code");
+    const hash = window.location.hash;
+    const hasRecoveryHash = hash && new URLSearchParams(hash.substring(1)).get("type") === "recovery";
+
+    if (hasRecoveryHash) {
+      markRecovery();
     }
 
-    // 2. Listen for auth state changes
+    // If there's a code, Supabase will exchange it — we need to wait for auth event
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      console.log("[ResetPassword] Auth event:", event);
       if (event === "PASSWORD_RECOVERY") {
-        resolve();
-      }
-      if (event === "SIGNED_IN") {
-        resolve();
+        markRecovery();
+      } else if (event === "SIGNED_IN") {
+        // SIGNED_IN after code exchange on /reset-password means recovery
+        markRecovery();
       }
     });
 
-    // 3. Check existing session (user arrived via recovery link already processed)
+    // If there's a code param, Supabase JS will handle it via exchangeCodeForSession
+    // We just wait for the auth event. Give it enough time.
+    if (hasCode) {
+      // The code exchange can take a few seconds
+      const timeout = setTimeout(() => {
+        // After waiting, check if we got a session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            markRecovery();
+          } else {
+            markInvalid();
+          }
+        });
+      }, 5000);
+      return () => {
+        timeout && clearTimeout(timeout);
+        subscription.unsubscribe();
+      };
+    }
+
+    // No code, no hash — check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        resolve();
+        markRecovery();
       } else {
-        // No session, no hash — invalid link
-        setTimeout(() => {
-          if (!resolved) {
-            resolved = true;
-            setChecking(false);
-          }
-        }, 2000);
+        // Wait a bit more for any auth redirect processing
+        setTimeout(() => markInvalid(), 3000);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [searchParams]);
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +127,6 @@ const ResetPassword = () => {
     }
   };
 
-  // Loading state
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-primary/10">
@@ -116,7 +140,6 @@ const ResetPassword = () => {
     );
   }
 
-  // Success state
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-primary/10">
@@ -135,7 +158,6 @@ const ResetPassword = () => {
     );
   }
 
-  // Invalid link state
   if (!isRecovery) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-primary/10">
@@ -158,7 +180,6 @@ const ResetPassword = () => {
     );
   }
 
-  // Reset password form
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-primary/10">
       <Card className="w-full max-w-md border-none shadow-2xl">
@@ -167,9 +188,7 @@ const ResetPassword = () => {
             <ShieldCheck className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold text-foreground">Criar Nova Senha</CardTitle>
-          <CardDescription>
-            Escolha uma senha segura para sua conta.
-          </CardDescription>
+          <CardDescription>Escolha uma senha segura para sua conta.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleResetPassword} className="space-y-5">
@@ -219,7 +238,6 @@ const ResetPassword = () => {
               </div>
             </div>
 
-            {/* Password requirements */}
             {password.length > 0 && (
               <div className="rounded-lg bg-muted/50 p-3 space-y-1.5">
                 <p className="text-xs font-medium text-muted-foreground mb-1">Requisitos da senha:</p>
