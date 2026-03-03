@@ -921,6 +921,7 @@ export type Database = {
           phone: string
           restaurant_name: string
           show_phone_publicly: boolean | null
+          trial_ends_at: string | null
           updated_at: string | null
         }
         Insert: {
@@ -934,6 +935,7 @@ export type Database = {
           phone: string
           restaurant_name: string
           show_phone_publicly?: boolean | null
+          trial_ends_at?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -947,6 +949,7 @@ export type Database = {
           phone?: string
           restaurant_name?: string
           show_phone_publicly?: boolean | null
+          trial_ends_at?: string | null
           updated_at?: string | null
         }
         Relationships: []

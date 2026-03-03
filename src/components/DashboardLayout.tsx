@@ -5,6 +5,7 @@ import { User } from "@supabase/supabase-js";
 import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { NavLink } from "@/components/NavLink";
+import { Badge } from "@/components/ui/badge";
 import { 
   LayoutDashboard, 
   Package, 
@@ -15,7 +16,8 @@ import {
   ShoppingCart,
   BarChart3,
   Settings,
-  Crown
+  Crown,
+  AlertTriangle
 } from "lucide-react";
 import grapeLogo from "@/assets/grape-logo.png";
 import { toast } from "sonner";
@@ -35,7 +37,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // Enable order notifications with sound
   useOrderNotifications();
   const { isAdmin } = useAdminCheck();
-  const { loading: subLoading, hasActiveSubscription } = useSubscription();
+  const { loading: subLoading, hasActiveSubscription, isOnTrial, trialDaysLeft } = useSubscription();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -168,6 +170,19 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <span className="font-semibold">grape</span>
         </header>
         
+        {isOnTrial && (
+          <div className="mx-6 mt-4 p-3 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 flex items-center gap-3 justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <p className="text-sm text-amber-800 dark:text-amber-300">
+                Período de teste grátis: <strong>{trialDaysLeft} {trialDaysLeft === 1 ? 'dia' : 'dias'} restantes</strong>
+              </p>
+            </div>
+            <Button size="sm" variant="outline" className="shrink-0 border-amber-400 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900" onClick={() => navigate("/subscription")}>
+              Assinar agora
+            </Button>
+          </div>
+        )}
         <main className="flex-1 p-6">
           {children}
         </main>
