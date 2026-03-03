@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Store, ShoppingBag, TrendingUp, Eye, Trash2 } from "lucide-react";
+import { Users, Store, ShoppingBag, TrendingUp, Eye, Trash2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -306,6 +306,7 @@ const Admin = () => {
                           <TableHead>Pedidos</TableHead>
                           <TableHead>Receita</TableHead>
                           <TableHead>Data de Cadastro</TableHead>
+                          <TableHead>Cardápio</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -319,6 +320,17 @@ const Admin = () => {
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                               {format(new Date(r.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="gap-1.5"
+                                onClick={() => window.open(`/store/${r.id}`, "_blank")}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                Ver cardápio
+                              </Button>
                             </TableCell>
                           </TableRow>
                         ))}
