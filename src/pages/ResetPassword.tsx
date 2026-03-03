@@ -8,40 +8,66 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { sanitizeError } from "@/lib/errorHandler";
 import grapeLogo from "@/assets/grape-logo.png";
+import { Lock, Eye, EyeOff, CheckCircle2, XCircle, ArrowLeft, ShieldCheck } from "lucide-react";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [success, setSuccess] = useState(false);
+
+  const hasMinLength = password.length >= 6;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
 
   useEffect(() => {
-    // Check for recovery token in URL hash (before Supabase clears it)
+    let resolved = false;
+    const resolve = () => {
+      if (!resolved) {
+        resolved = true;
+        setIsRecovery(true);
+        setChecking(false);
+      }
+    };
+
+    // 1. Check URL hash for recovery token
     const hash = window.location.hash;
     if (hash) {
       const hashParams = new URLSearchParams(hash.substring(1));
       const type = hashParams.get("type");
       if (type === "recovery") {
-        setIsRecovery(true);
+        resolve();
       }
     }
 
-    // Listen for auth state changes (PASSWORD_RECOVERY event)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // 2. Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
-        setIsRecovery(true);
+        resolve();
       }
-      // If user has a session and landed on this page, they likely came from recovery link
-      if (event === "SIGNED_IN" && session) {
-        setIsRecovery(true);
+      if (event === "SIGNED_IN") {
+        resolve();
       }
     });
 
-    // Also check if user already has an active session (recovery link already processed)
+    // 3. Check existing session (user arrived via recovery link already processed)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setIsRecovery(true);
+        resolve();
+      } else {
+        // No session, no hash — invalid link
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            setChecking(false);
+          }
+        }, 2000);
       }
     });
 
@@ -50,11 +76,11 @@ const ResetPassword = () => {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
+    if (!passwordsMatch) {
       toast.error("As senhas não coincidem.");
       return;
     }
-    if (password.length < 6) {
+    if (!hasMinLength) {
       toast.error("A senha deve ter pelo menos 6 caracteres.");
       return;
     }
@@ -66,8 +92,9 @@ const ResetPassword = () => {
         toast.error(sanitizeError(error));
         return;
       }
+      setSuccess(true);
       toast.success("Senha atualizada com sucesso!");
-      navigate("/dashboard");
+      setTimeout(() => navigate("/dashboard"), 2500);
     } catch (error: unknown) {
       toast.error(sanitizeError(error));
     } finally {
@@ -75,19 +102,54 @@ const ResetPassword = () => {
     }
   };
 
+  // Loading state
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-primary/10">
+        <Card className="w-full max-w-md border-none shadow-2xl">
+          <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-muted-foreground text-sm">Verificando link de recuperação...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Success state
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-primary/10">
+        <Card className="w-full max-w-md border-none shadow-2xl">
+          <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle2 className="h-8 w-8 text-green-600" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Senha Atualizada!</h2>
+            <p className="text-muted-foreground text-sm text-center">
+              Sua senha foi alterada com sucesso. Redirecionando...
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Invalid link state
   if (!isRecovery) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-primary/10">
+        <Card className="w-full max-w-md border-none shadow-2xl">
+          <CardHeader className="text-center pb-2">
             <img src={grapeLogo} alt="grape" className="mx-auto w-16 h-16 object-contain mb-4" />
-            <CardTitle className="text-2xl font-bold text-foreground">Link inválido</CardTitle>
+            <CardTitle className="text-xl font-bold text-foreground">Link Inválido</CardTitle>
             <CardDescription>
-              Este link de recuperação é inválido ou já expirou.
+              Este link de recuperação é inválido ou já expirou. Solicite um novo link na página de login.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button className="w-full" onClick={() => navigate("/auth")}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar ao Login
             </Button>
           </CardContent>
@@ -96,40 +158,86 @@ const ResetPassword = () => {
     );
   }
 
+  // Reset password form
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <img src={grapeLogo} alt="grape" className="mx-auto w-16 h-16 object-contain mb-4" />
-          <CardTitle className="text-2xl font-bold text-foreground">Nova Senha</CardTitle>
-          <CardDescription>Digite sua nova senha abaixo.</CardDescription>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary/5 via-background to-primary/10">
+      <Card className="w-full max-w-md border-none shadow-2xl">
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <ShieldCheck className="h-8 w-8 text-primary" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-foreground">Criar Nova Senha</CardTitle>
+          <CardDescription>
+            Escolha uma senha segura para sua conta.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleResetPassword} className="space-y-4">
+          <form onSubmit={handleResetPassword} className="space-y-5">
             <div className="space-y-2">
               <Label htmlFor="new-password">Nova Senha</Label>
-              <Input
-                id="new-password"
-                type="password"
-                placeholder="Mínimo 6 caracteres"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="new-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Mínimo 6 caracteres"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirmar Senha</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                placeholder="Repita a senha"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="confirm-password"
+                  type={showConfirm ? "text" : "password"}
+                  placeholder="Repita a senha"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="pl-10 pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Atualizando..." : "Atualizar Senha"}
+
+            {/* Password requirements */}
+            {password.length > 0 && (
+              <div className="rounded-lg bg-muted/50 p-3 space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Requisitos da senha:</p>
+                <RequirementItem met={hasMinLength} text="Mínimo 6 caracteres" />
+                <RequirementItem met={hasUpperCase} text="Uma letra maiúscula" />
+                <RequirementItem met={hasNumber} text="Um número" />
+                {confirmPassword.length > 0 && (
+                  <RequirementItem met={passwordsMatch} text="Senhas coincidem" />
+                )}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={loading || !hasMinLength || !passwordsMatch}
+            >
+              {loading ? "Atualizando..." : "Salvar Nova Senha"}
             </Button>
           </form>
         </CardContent>
@@ -137,5 +245,16 @@ const ResetPassword = () => {
     </div>
   );
 };
+
+const RequirementItem = ({ met, text }: { met: boolean; text: string }) => (
+  <div className="flex items-center gap-2 text-xs">
+    {met ? (
+      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
+    ) : (
+      <XCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+    )}
+    <span className={met ? "text-green-700" : "text-muted-foreground"}>{text}</span>
+  </div>
+);
 
 export default ResetPassword;
