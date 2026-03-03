@@ -234,20 +234,20 @@ const Index = () => {
           </h2>
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center max-w-6xl mx-auto">
             {/* Comparison Table */}
-            <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/30">
+            <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/30 aspect-square flex items-center justify-center bg-white/5">
               <img
                 src="/images/comparison-table.png"
                 alt="Comparação Com Grape vs Sem Grape"
-                className="w-full h-auto"
+                className="w-full h-full object-contain"
                 loading="lazy"
               />
             </div>
             {/* Devices Showcase */}
-            <div className="flex items-center justify-center">
+            <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/30 aspect-square flex items-center justify-center bg-white/5">
               <img
                 src="/images/devices-showcase.png"
                 alt="Grape em todos os dispositivos"
-                className="w-full max-w-lg h-auto drop-shadow-2xl"
+                className="w-full h-full object-contain"
                 loading="lazy"
               />
             </div>
