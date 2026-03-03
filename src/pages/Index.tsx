@@ -225,6 +225,36 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Comparison Section */}
+      <section className="relative z-10 bg-gradient-to-b from-[hsl(270,65%,12%)] to-[hsl(270,65%,18%)] py-16 md:py-24">
+        <div className="container">
+          <h2 className="text-2xl md:text-4xl font-extrabold mb-12 text-center leading-tight">
+            Transforme a experiência dos seus pedidos com a{" "}
+            <span className="text-yellow-400">Grape</span>
+          </h2>
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center max-w-6xl mx-auto">
+            {/* Comparison Table */}
+            <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/30">
+              <img
+                src="/images/comparison-table.png"
+                alt="Comparação Com Grape vs Sem Grape"
+                className="w-full h-auto"
+                loading="lazy"
+              />
+            </div>
+            {/* Devices Showcase */}
+            <div className="flex items-center justify-center">
+              <img
+                src="/images/devices-showcase.png"
+                alt="Grape em todos os dispositivos"
+                className="w-full max-w-lg h-auto drop-shadow-2xl"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section className="relative z-10 bg-[hsl(270,65%,8%)] py-20">
         <div className="container">
