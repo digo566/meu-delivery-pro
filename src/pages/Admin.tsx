@@ -26,6 +26,8 @@ interface Restaurant {
   restaurant_name: string;
   phone: string;
   created_at: string;
+  totalOrders: number;
+  totalRevenue: number;
 }
 
 const Admin = () => {
@@ -61,25 +63,38 @@ const Admin = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load leads
       const { data: leadsData } = await supabase
         .from("leads")
         .select("*")
         .order("created_at", { ascending: false });
 
-      // Load restaurants (profiles)
       const { data: profilesData } = await supabase
         .from("profiles")
         .select("id, restaurant_name, phone, created_at")
         .order("created_at", { ascending: false });
 
-      // Load orders count and revenue
       const { data: ordersData } = await supabase
         .from("orders")
-        .select("total_amount");
+        .select("restaurant_id, total_amount");
+
+      // Group orders by restaurant
+      const revenueByRestaurant: Record<string, { orders: number; revenue: number }> = {};
+      (ordersData || []).forEach((o) => {
+        if (!revenueByRestaurant[o.restaurant_id]) {
+          revenueByRestaurant[o.restaurant_id] = { orders: 0, revenue: 0 };
+        }
+        revenueByRestaurant[o.restaurant_id].orders += 1;
+        revenueByRestaurant[o.restaurant_id].revenue += Number(o.total_amount);
+      });
+
+      const restaurantsWithRevenue: Restaurant[] = (profilesData || []).map((p) => ({
+        ...p,
+        totalOrders: revenueByRestaurant[p.id]?.orders || 0,
+        totalRevenue: revenueByRestaurant[p.id]?.revenue || 0,
+      }));
 
       setLeads(leadsData || []);
-      setRestaurants(profilesData || []);
+      setRestaurants(restaurantsWithRevenue);
       setStats({
         totalLeads: leadsData?.length || 0,
         totalRestaurants: profilesData?.length || 0,
@@ -288,6 +303,8 @@ const Admin = () => {
                         <TableRow>
                           <TableHead>Restaurante</TableHead>
                           <TableHead>Telefone</TableHead>
+                          <TableHead>Pedidos</TableHead>
+                          <TableHead>Receita</TableHead>
                           <TableHead>Data de Cadastro</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -296,6 +313,10 @@ const Admin = () => {
                           <TableRow key={r.id}>
                             <TableCell className="font-medium">{r.restaurant_name}</TableCell>
                             <TableCell>{r.phone}</TableCell>
+                            <TableCell>{r.totalOrders}</TableCell>
+                            <TableCell className="font-semibold">
+                              R$ {r.totalRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                               {format(new Date(r.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                             </TableCell>
