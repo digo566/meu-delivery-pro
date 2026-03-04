@@ -36,8 +36,11 @@ const Auth = () => {
     e.preventDefault();
     setForgotLoading(true);
     try {
+      const redirectBase = window.location.hostname === 'localhost' 
+        ? window.location.origin 
+        : 'https://grapesystem.com.br';
       const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${redirectBase}/reset-password`,
       });
       if (error) {
         toast.error(sanitizeError(error));
