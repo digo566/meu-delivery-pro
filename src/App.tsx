@@ -12,6 +12,7 @@ import PublicStore from "./pages/PublicStore";
 import TrackOrder from "./pages/TrackOrder";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import AuthRecoveryListener from "./components/AuthRecoveryListener";
 
 // Lazy load: dashboard pages (heavy deps like Plotly, Recharts)
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -42,6 +43,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AuthRecoveryListener />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Index />} />
