@@ -33,8 +33,8 @@ interface AnalyticsAIChatProps {
 const quickActions = [
   { icon: TrendingUp, label: "Analisar tendências", prompt: "Analise as tendências atuais dos meus pedidos e me dê insights sobre o desempenho" },
   { icon: ShoppingCart, label: "Reduzir abandono", prompt: "Como posso reduzir a taxa de abandono de carrinho? Me dê estratégias práticas" },
-  { icon: XCircle, label: "Evitar cancelamentos", prompt: "Analise os cancelamentos e sugira ações para reduzir essa taxa" },
-  { icon: Package, label: "Otimizar cardápio", prompt: "Analise meus produtos e sugira otimizações no cardápio para aumentar vendas" },
+  { icon: XCircle, label: "Clientes em risco de churn", prompt: "Quais clientes estão em risco de churn (parar de pedir)? O que posso fazer para recuperá-los?" },
+  { icon: Package, label: "Margem de lucro", prompt: "Minha margem de lucro caiu este mês, o que os dados dizem? Quais produtos têm melhor e pior margem?" },
 ];
 
 export function AnalyticsAIChat({ analyticsData }: AnalyticsAIChatProps) {
