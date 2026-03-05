@@ -402,7 +402,7 @@ const Products = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-2">
                     <p className="text-2xl font-bold text-primary">
                       R$ {product.price.toFixed(2)}
                     </p>
