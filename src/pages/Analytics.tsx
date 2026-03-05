@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { 
   Loader2, 
   TrendingUp, 
+  TrendingDown,
   ShoppingCart, 
   XCircle, 
   Package, 
@@ -36,7 +37,9 @@ import {
   Sparkles, 
   BarChart3,
   Brain,
-  CalendarIcon
+  CalendarIcon,
+  DollarSign,
+  Star
 } from "lucide-react";
 
 export default function Analytics() {
