@@ -102,16 +102,20 @@ const Products = () => {
 
       if (editingProduct) {
         const { error } = await supabase
-          .from("products")
-          .update({
-            name: formData.name,
-            description: formData.description,
-            price: parseFloat(formData.price),
-            image_url: formData.image_url,
-            available: formData.available,
-            category_id: formData.category_id || null,
-          })
-          .eq("id", editingProduct.id);
+103:           .from("products")
+104:           .update({
+105:             name: formData.name,
+106:             description: formData.description,
+107:             price: parseFloat(formData.price),
+108:             cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null,
+109:             profit_margin: formData.cost_price && formData.price
+110:               ? ((parseFloat(formData.price) - parseFloat(formData.cost_price)) / parseFloat(formData.price)) * 100
+111:               : null,
+112:             image_url: formData.image_url,
+113:             available: formData.available,
+114:             category_id: formData.category_id || null,
+115:           })
+116:           .eq("id", editingProduct.id);
 
         if (error) throw error;
         toast.success("Produto atualizado com sucesso!");
