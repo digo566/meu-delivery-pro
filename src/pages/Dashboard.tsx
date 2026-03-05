@@ -13,6 +13,9 @@ interface DashboardStats {
   totalRevenue: number;
   averageTicket: number;
   topProduct: string;
+  estimatedProfit: number;
+  totalCosts: number;
+  starProducts: Array<{ name: string; margin: number; revenue: number }>;
 }
 
 const Dashboard = () => {
