@@ -98,41 +98,59 @@ const Products = () => {
     e.preventDefault();
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.error("[Products] No user found");
+        return;
+      }
+
+      const costPrice = formData.cost_price ? parseFloat(formData.cost_price) : 0;
+      const price = parseFloat(formData.price);
+
+      console.log("[Products] Submitting - editing:", !!editingProduct, "cost_price:", costPrice, "price:", price, "formData.cost_price:", formData.cost_price);
 
       if (editingProduct) {
-        const costPrice = formData.cost_price ? parseFloat(formData.cost_price) : 0;
-        const price = parseFloat(formData.price);
+        const updateData = {
+          name: formData.name,
+          description: formData.description,
+          price,
+          cost_price: costPrice,
+          image_url: formData.image_url,
+          available: formData.available,
+          category_id: formData.category_id || null,
+        };
 
-        const { error } = await supabase
+        console.log("[Products] Update payload:", JSON.stringify(updateData));
+
+        const { data: result, error } = await supabase
           .from("products")
-          .update({
-            name: formData.name,
-            description: formData.description,
-            price,
-            cost_price: costPrice,
-            image_url: formData.image_url,
-            available: formData.available,
-            category_id: formData.category_id || null,
-          })
-          .eq("id", editingProduct.id);
+          .update(updateData)
+          .eq("id", editingProduct.id)
+          .select();
+
+        console.log("[Products] Update result:", result, "error:", error);
 
         if (error) throw error;
         toast.success("Produto atualizado com sucesso!");
       } else {
-        const newCostPrice = formData.cost_price ? parseFloat(formData.cost_price) : 0;
-        const newPrice = parseFloat(formData.price);
-
-        const { error } = await supabase.from("products").insert({
+        const insertData = {
           restaurant_id: user.id,
           name: formData.name,
           description: formData.description,
-          price: newPrice,
-          cost_price: newCostPrice,
+          price,
+          cost_price: costPrice,
           image_url: formData.image_url,
           available: formData.available,
           category_id: formData.category_id || null,
-        });
+        };
+
+        console.log("[Products] Insert payload:", JSON.stringify(insertData));
+
+        const { data: result, error } = await supabase
+          .from("products")
+          .insert(insertData)
+          .select();
+
+        console.log("[Products] Insert result:", result, "error:", error);
 
         if (error) throw error;
         toast.success("Produto criado com sucesso!");
@@ -142,7 +160,8 @@ const Products = () => {
       resetForm();
       loadProducts();
     } catch (error: any) {
-      toast.error("Erro ao salvar produto");
+      console.error("[Products] Save error:", error);
+      toast.error("Erro ao salvar produto: " + (error.message || "Erro desconhecido"));
     }
   };
 
