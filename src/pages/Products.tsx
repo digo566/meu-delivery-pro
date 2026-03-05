@@ -101,16 +101,16 @@ const Products = () => {
       if (!user) return;
 
       if (editingProduct) {
+        const costPrice = formData.cost_price ? parseFloat(formData.cost_price) : 0;
+        const price = parseFloat(formData.price);
+
         const { error } = await supabase
           .from("products")
           .update({
             name: formData.name,
             description: formData.description,
-            price: parseFloat(formData.price),
-            cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null,
-            profit_margin: formData.cost_price && formData.price
-              ? ((parseFloat(formData.price) - parseFloat(formData.cost_price)) / parseFloat(formData.price)) * 100
-              : null,
+            price,
+            cost_price: costPrice,
             image_url: formData.image_url,
             available: formData.available,
             category_id: formData.category_id || null,
@@ -120,15 +120,15 @@ const Products = () => {
         if (error) throw error;
         toast.success("Produto atualizado com sucesso!");
       } else {
+        const newCostPrice = formData.cost_price ? parseFloat(formData.cost_price) : 0;
+        const newPrice = parseFloat(formData.price);
+
         const { error } = await supabase.from("products").insert({
           restaurant_id: user.id,
           name: formData.name,
           description: formData.description,
-          price: parseFloat(formData.price),
-          cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null,
-          profit_margin: formData.cost_price && formData.price
-            ? ((parseFloat(formData.price) - parseFloat(formData.cost_price)) / parseFloat(formData.price)) * 100
-            : null,
+          price: newPrice,
+          cost_price: newCostPrice,
           image_url: formData.image_url,
           available: formData.available,
           category_id: formData.category_id || null,
