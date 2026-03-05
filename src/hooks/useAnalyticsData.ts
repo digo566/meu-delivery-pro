@@ -101,12 +101,12 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
       const productSales: Record<string, number> = {};
       const productProfit: Record<string, { vendas: number; receita: number; custo: number }> = {};
       
-      orders?.forEach(order => {
+       orders?.forEach(order => {
         if (order.status === "cancelled") return;
         order.order_items?.forEach(item => {
           const productName = item.product?.name || "Produto Desconhecido";
-          const costPrice = (item.product as any)?.cost_price || 0;
-          const price = (item.product as any)?.price || item.unit_price || 0;
+          const costData = productCostMap[productName];
+          const costPrice = costData?.cost_price || 0;
           
           productSales[productName] = (productSales[productName] || 0) + item.quantity;
           
@@ -114,7 +114,7 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
             productProfit[productName] = { vendas: 0, receita: 0, custo: 0 };
           }
           productProfit[productName].vendas += item.quantity;
-          productProfit[productName].receita += item.subtotal || (price * item.quantity);
+          productProfit[productName].receita += item.subtotal || (item.unit_price * item.quantity);
           productProfit[productName].custo += costPrice * item.quantity;
         });
       });
