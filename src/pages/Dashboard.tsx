@@ -24,6 +24,9 @@ const Dashboard = () => {
     totalRevenue: 0,
     averageTicket: 0,
     topProduct: "N/A",
+    estimatedProfit: 0,
+    totalCosts: 0,
+    starProducts: [],
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
