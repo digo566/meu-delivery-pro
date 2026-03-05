@@ -125,6 +125,10 @@ const Products = () => {
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
+          cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null,
+          profit_margin: formData.cost_price && formData.price
+            ? ((parseFloat(formData.price) - parseFloat(formData.cost_price)) / parseFloat(formData.price)) * 100
+            : null,
           image_url: formData.image_url,
           available: formData.available,
           category_id: formData.category_id || null,
