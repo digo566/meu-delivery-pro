@@ -122,9 +122,6 @@ const Products = () => {
       } else {
         const newCostPrice = formData.cost_price ? parseFloat(formData.cost_price) : 0;
         const newPrice = parseFloat(formData.price);
-        const newProfitMargin = newCostPrice > 0 && newPrice > 0
-          ? ((newPrice - newCostPrice) / newPrice) * 100
-          : null;
 
         const { error } = await supabase.from("products").insert({
           restaurant_id: user.id,
@@ -132,7 +129,6 @@ const Products = () => {
           description: formData.description,
           price: newPrice,
           cost_price: newCostPrice,
-          profit_margin: newProfitMargin,
           image_url: formData.image_url,
           available: formData.available,
           category_id: formData.category_id || null,
