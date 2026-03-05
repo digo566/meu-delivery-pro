@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, Bot, User, Loader2, Trash2 } from "lucide-react";
 import { useFinancialAI } from "@/hooks/useFinancialAI";
+import ReactMarkdown from "react-markdown";
 
 export function FinancialAIChat() {
   const { messages, isLoading, error, sendMessage, clearMessages } = useFinancialAI();
