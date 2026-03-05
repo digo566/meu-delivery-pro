@@ -41,12 +41,27 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
       const to = dateTo ? endOfDay(dateTo) : endOfDay(new Date());
 
       // Fetch orders within date range
-      const { data: orders } = await supabase
-        .from("orders")
-        .select("*, order_items(*, product:products(name, price, cost_price))")
-        .eq("restaurant_id", user.id)
-        .gte("created_at", from.toISOString())
-        .lte("created_at", to.toISOString());
+      const [ordersResult, productsResult] = await Promise.all([
+        supabase
+          .from("orders")
+          .select("*, order_items(*, product:products(name))")
+          .eq("restaurant_id", user.id)
+          .gte("created_at", from.toISOString())
+          .lte("created_at", to.toISOString()),
+        supabase
+          .from("products")
+          .select("id, name, price, cost_price")
+          .eq("restaurant_id", user.id),
+      ]);
+
+      const orders = ordersResult.data;
+      const allProducts = productsResult.data || [];
+      
+      // Build cost lookup from current product data
+      const productCostMap: Record<string, { price: number; cost_price: number }> = {};
+      allProducts.forEach(p => {
+        productCostMap[p.name] = { price: p.price, cost_price: p.cost_price || 0 };
+      });
 
       // Calculate metrics
       const pedidos_total = orders?.length || 0;
@@ -86,12 +101,12 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
       const productSales: Record<string, number> = {};
       const productProfit: Record<string, { vendas: number; receita: number; custo: number }> = {};
       
-      orders?.forEach(order => {
+       orders?.forEach(order => {
         if (order.status === "cancelled") return;
         order.order_items?.forEach(item => {
           const productName = item.product?.name || "Produto Desconhecido";
-          const costPrice = (item.product as any)?.cost_price || 0;
-          const price = (item.product as any)?.price || item.unit_price || 0;
+          const costData = productCostMap[productName];
+          const costPrice = costData?.cost_price || 0;
           
           productSales[productName] = (productSales[productName] || 0) + item.quantity;
           
@@ -99,7 +114,7 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
             productProfit[productName] = { vendas: 0, receita: 0, custo: 0 };
           }
           productProfit[productName].vendas += item.quantity;
-          productProfit[productName].receita += item.subtotal || (price * item.quantity);
+          productProfit[productName].receita += item.subtotal || (item.unit_price * item.quantity);
           productProfit[productName].custo += costPrice * item.quantity;
         });
       });
@@ -112,7 +127,6 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
       const produtos_menos_vendidos = sortedProducts.slice(-5).reverse();
 
       // Profitability ranking - include ALL products with sales
-      // Products without cost_price show margin as 0 to encourage filling it in
       const profitabilityList: ProductProfitability[] = Object.entries(productProfit)
         .map(([produto, d]) => ({
           produto,
@@ -122,6 +136,9 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
           lucro: d.receita - d.custo,
           margem: d.receita > 0 && d.custo > 0 ? ((d.receita - d.custo) / d.receita) * 100 : 0,
         }));
+
+      console.log("[Analytics] Product cost map:", productCostMap);
+      console.log("[Analytics] Profitability list:", profitabilityList);
 
       // Most profitable: sort by total profit (revenue - cost), weighted by volume
       const produtos_mais_lucrativos = [...profitabilityList]
