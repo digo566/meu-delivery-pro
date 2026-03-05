@@ -434,9 +434,14 @@ export default function Analytics() {
                   <div className="space-y-3">
                     {data?.produtos_menos_lucrativos.map((p, i) => (
                       <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-destructive/10">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{p.produto}</p>
-                          <p className="text-xs text-muted-foreground">{p.vendas} vendas · R$ {p.receita.toFixed(2)} receita</p>
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <span className="text-lg font-bold text-muted-foreground">#{i + 1}</span>
+                          <div>
+                            <p className="font-medium truncate">{p.produto}</p>
+                            <p className="text-xs text-muted-foreground">
+                              📦 {p.vendas} pedidos · R$ {p.receita.toFixed(2)} receita · Custo: R$ {p.custo.toFixed(2)}
+                            </p>
+                          </div>
                         </div>
                         <div className="text-right ml-3">
                           <p className="font-bold text-destructive">R$ {p.lucro.toFixed(2)}</p>
