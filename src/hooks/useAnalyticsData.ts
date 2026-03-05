@@ -41,12 +41,27 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
       const to = dateTo ? endOfDay(dateTo) : endOfDay(new Date());
 
       // Fetch orders within date range
-      const { data: orders } = await supabase
-        .from("orders")
-        .select("*, order_items(*, product:products(name, price, cost_price))")
-        .eq("restaurant_id", user.id)
-        .gte("created_at", from.toISOString())
-        .lte("created_at", to.toISOString());
+      const [ordersResult, productsResult] = await Promise.all([
+        supabase
+          .from("orders")
+          .select("*, order_items(*, product:products(name))")
+          .eq("restaurant_id", user.id)
+          .gte("created_at", from.toISOString())
+          .lte("created_at", to.toISOString()),
+        supabase
+          .from("products")
+          .select("id, name, price, cost_price")
+          .eq("restaurant_id", user.id),
+      ]);
+
+      const orders = ordersResult.data;
+      const allProducts = productsResult.data || [];
+      
+      // Build cost lookup from current product data
+      const productCostMap: Record<string, { price: number; cost_price: number }> = {};
+      allProducts.forEach(p => {
+        productCostMap[p.name] = { price: p.price, cost_price: p.cost_price || 0 };
+      });
 
       // Calculate metrics
       const pedidos_total = orders?.length || 0;
