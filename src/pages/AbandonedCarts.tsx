@@ -195,12 +195,12 @@ export default function AbandonedCarts() {
                   </div>
 
                   <Button
-                    onClick={() => handleContact(cart)}
-                    className="w-full"
+                    onClick={() => handleContact(cart, restaurantName)}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
                     disabled={cart.contacted}
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
-                    {cart.contacted ? "Cliente já Contatado" : "Entrar em Contato via WhatsApp"}
+                    {cart.contacted ? "Cliente já Contatado" : "📱 Recuperar via WhatsApp"}
                   </Button>
                 </CardContent>
               </Card>
