@@ -41,31 +41,118 @@ serve(async (req) => {
       });
     }
 
+    // Fetch enriched financial context for AI
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const [ordersResult, expensesResult, clientsResult] = await Promise.all([
+      supabase
+        .from("orders")
+        .select("*, order_items(quantity, subtotal, unit_price, product:products(name, cost_price, price))")
+        .eq("restaurant_id", user.id)
+        .gte("created_at", thirtyDaysAgo),
+      supabase
+        .from("expenses")
+        .select("amount, description")
+        .eq("restaurant_id", user.id)
+        .gte("expense_date", thirtyDaysAgo),
+      supabase
+        .from("clients")
+        .select("id, name, phone")
+        .eq("restaurant_id", user.id),
+    ]);
+
+    const orders = ordersResult.data || [];
+    const expenses = expensesResult.data || [];
+    const clients = clientsResult.data || [];
+
+    // Calculate CMV (Custo de Mercadoria Vendida)
+    const delivered = orders.filter((o: any) => o.status === "delivered");
+    const cancelled = orders.filter((o: any) => o.status === "cancelled");
+    const totalRevenue = delivered.reduce((s: number, o: any) => s + (o.total_amount || 0), 0);
+    const totalExpenses = expenses.reduce((s: number, e: any) => s + (e.amount || 0), 0);
+    
+    let cmv = 0;
+    const productPerf: Record<string, { qty: number; revenue: number; cost: number }> = {};
+    delivered.forEach((order: any) => {
+      order.order_items?.forEach((item: any) => {
+        const costPrice = item.product?.cost_price || 0;
+        cmv += costPrice * item.quantity;
+        const name = item.product?.name || "Desconhecido";
+        if (!productPerf[name]) productPerf[name] = { qty: 0, revenue: 0, cost: 0 };
+        productPerf[name].qty += item.quantity;
+        productPerf[name].revenue += item.subtotal || 0;
+        productPerf[name].cost += costPrice * item.quantity;
+      });
+    });
+
+    const topProducts = Object.entries(productPerf)
+      .map(([name, d]) => ({ name, qty: d.qty, revenue: d.revenue, margin: d.revenue > 0 ? ((d.revenue - d.cost) / d.revenue * 100) : 0 }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+
+    // Churn risk: clients who ordered >2 times but not in last 14 days
+    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const clientOrderCounts: Record<string, { count: number; lastOrder: string; name: string }> = {};
+    orders.forEach((o: any) => {
+      if (o.client_id && o.status !== "cancelled") {
+        if (!clientOrderCounts[o.client_id]) {
+          const client = clients.find((c: any) => c.id === o.client_id);
+          clientOrderCounts[o.client_id] = { count: 0, lastOrder: "", name: client?.name || "Desconhecido" };
+        }
+        clientOrderCounts[o.client_id].count++;
+        if (o.created_at > (clientOrderCounts[o.client_id].lastOrder || "")) {
+          clientOrderCounts[o.client_id].lastOrder = o.created_at;
+        }
+      }
+    });
+
+    const churnRisk = Object.entries(clientOrderCounts)
+      .filter(([_, d]) => d.count >= 2 && d.lastOrder < fourteenDaysAgo)
+      .map(([id, d]) => ({ name: d.name, orders: d.count, lastOrder: d.lastOrder }))
+      .slice(0, 10);
+
+    const cancellationRate = orders.length > 0 ? (cancelled.length / orders.length * 100) : 0;
+    const netProfit = totalRevenue - cmv - totalExpenses;
+
+    const financialContext = {
+      totalVendas: totalRevenue,
+      cmv,
+      despesasOperacionais: totalExpenses,
+      lucroLiquido: netProfit,
+      margemLiquida: totalRevenue > 0 ? (netProfit / totalRevenue * 100) : 0,
+      taxaCancelamento: cancellationRate,
+      totalPedidos: orders.length,
+      pedidosEntregues: delivered.length,
+      pedidosCancelados: cancelled.length,
+      ticketMedio: delivered.length > 0 ? totalRevenue / delivered.length : 0,
+      topProdutos: topProducts,
+      clientesRiscoChurn: churnRisk,
+      totalClientes: clients.length,
+    };
+
     const systemPrompt = `Você é um especialista em análise de dados e inteligência de negócios para restaurantes e delivery.
 
-Seu papel é analisar métricas operacionais e fornecer insights acionáveis, claros e práticos.
+CONTEXTO FINANCEIRO REAL DO RESTAURANTE (últimos 30 dias):
+${JSON.stringify(financialContext, null, 2)}
 
-DADOS ATUAIS DO RESTAURANTE:
+DADOS OPERACIONAIS:
 ${JSON.stringify(analyticsData, null, 2)}
 
 SUAS CAPACIDADES:
-1. Análise de tendências de pedidos e vendas
+1. Análise de tendências de pedidos e vendas com dados financeiros reais
 2. Identificação de padrões de cancelamento e abandono
-3. Análise de performance de produtos
-4. Recomendações para aumentar conversão
-5. Estratégias para reduzir cancelamentos
-6. Otimização de cardápio baseada em dados
+3. Análise de performance e MARGEM de produtos (usando CMV real)
+4. Recomendações para aumentar conversão e lucro
+5. Identificação de clientes em risco de CHURN (parar de pedir)
+6. Análise de CMV (Custo de Mercadoria Vendida) e margem de contribuição
+7. Diagnóstico de saúde financeira
 
-REGRAS CRÍTICAS - SEMPRE SEGUIR:
-1. **JUSTIFIQUE CADA SUGESTÃO COM DADOS**: Sempre que fizer uma sugestão ou recomendação, explique O PORQUÊ baseado nos números. Exemplo: "Sugiro focar em promoções de quinta-feira PORQUE seus dados mostram que quinta tem apenas 12 pedidos vs 40 no sábado, uma diferença de 70%."
-
-2. **CITE NÚMEROS ESPECÍFICOS**: Não diga apenas "taxa de abandono alta". Diga "taxa de abandono de X% está acima da média de 15% do setor".
-
-3. **COMPARE E CONTEXTUALIZE**: Compare períodos, produtos, dias da semana. Use os dados para mostrar padrões.
-
-4. **IMPACTO FINANCEIRO**: Quantifique o impacto potencial. "Reduzir cancelamentos de X para Y pode representar R$Z a mais por mês."
-
-5. **ESTRUTURA DAS RESPOSTAS**:
+REGRAS CRÍTICAS:
+1. **JUSTIFIQUE COM DADOS**: Sempre cite números específicos do contexto acima
+2. **IMPACTO FINANCEIRO**: Quantifique impacto potencial em R$
+3. **CHURN**: Quando perguntado sobre churn, use a lista de clientesRiscoChurn
+4. **MARGEM**: Use CMV real para calcular margem, não valores estimados
+5. **ESTRUTURA**:
    📊 **Análise dos Dados**: O que os números mostram
    💡 **Insight**: O que isso significa
    🎯 **Ação Recomendada**: O que fazer
@@ -73,9 +160,7 @@ REGRAS CRÍTICAS - SEMPRE SEGUIR:
 
 - Seja direto e prático
 - Responda em português brasileiro
-- Use formatação clara com emojis para destacar seções
-- Se não tiver dados suficientes, seja honesto e sugira o que monitorar
-- Sempre conecte sugestões aos números disponíveis`;
+- Use formatação markdown com emojis`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -84,7 +169,7 @@ REGRAS CRÍTICAS - SEMPRE SEGUIR:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: message },
