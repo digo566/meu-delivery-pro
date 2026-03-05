@@ -394,6 +394,66 @@ export default function Analytics() {
               </Card>
             </div>
 
+            {/* Profitability Section */}
+            {(data?.produtos_mais_lucrativos?.length || 0) > 0 ? (
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Card className="p-6 bg-gradient-to-br from-background to-green-500/5 border-green-500/20">
+                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Star className="h-5 w-5 text-yellow-500" />
+                    Produtos Mais Lucrativos
+                  </h3>
+                  <div className="space-y-3">
+                    {data?.produtos_mais_lucrativos.map((p, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-green-500/10">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{p.produto}</p>
+                          <p className="text-xs text-muted-foreground">{p.vendas} vendas · R$ {p.receita.toFixed(2)} receita</p>
+                        </div>
+                        <div className="text-right ml-3">
+                          <p className="font-bold text-green-500">R$ {p.lucro.toFixed(2)}</p>
+                          <p className="text-xs text-muted-foreground">Margem: {p.margem.toFixed(1)}%</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+
+                <Card className="p-6 bg-gradient-to-br from-background to-destructive/5 border-destructive/20">
+                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <TrendingDown className="h-5 w-5 text-destructive" />
+                    Produtos com Menor Margem
+                  </h3>
+                  <div className="space-y-3">
+                    {data?.produtos_menos_lucrativos.map((p, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-destructive/10">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{p.produto}</p>
+                          <p className="text-xs text-muted-foreground">{p.vendas} vendas · R$ {p.receita.toFixed(2)} receita</p>
+                        </div>
+                        <div className="text-right ml-3">
+                          <p className="font-bold text-destructive">R$ {p.lucro.toFixed(2)}</p>
+                          <p className="text-xs text-muted-foreground">Margem: {p.margem.toFixed(1)}%</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    💡 Considere ajustar preços ou reduzir custos destes produtos
+                  </p>
+                </Card>
+              </div>
+            ) : (
+              <Card className="p-6 border-dashed border-2 border-muted">
+                <div className="text-center space-y-2">
+                  <DollarSign className="h-8 w-8 mx-auto text-muted-foreground" />
+                  <p className="font-medium">Análise de Lucratividade</p>
+                  <p className="text-sm text-muted-foreground">
+                    Cadastre o <strong>Custo de Produção</strong> nos seus produtos para ver quais dão mais e menos lucro.
+                  </p>
+                </div>
+              </Card>
+            )}
+
             {/* BCG Matrix & Delivery Heatmap */}
             <div className="grid gap-6 lg:grid-cols-2">
               <BCGMatrixChart />
