@@ -425,6 +425,19 @@ const Products = () => {
                       </Button>
                     </div>
                   </div>
+                  {product.cost_price != null && product.cost_price > 0 && (
+                    <div className="flex items-center gap-2 mb-4 text-sm">
+                      <span className="text-muted-foreground">Margem:</span>
+                      <span className={`font-semibold ${
+                        product.profit_margin && product.profit_margin >= 30 ? 'text-green-600' : 'text-orange-600'
+                      }`}>
+                        {product.profit_margin?.toFixed(1)}%
+                      </span>
+                      {product.profit_margin && product.profit_margin >= 50 && (
+                        <span title="Produto Estrela - Alta Margem">⭐</span>
+                      )}
+                    </div>
+                  )}
                   <ProductOptionsManager
                     productId={product.id}
                     productName={product.name}
