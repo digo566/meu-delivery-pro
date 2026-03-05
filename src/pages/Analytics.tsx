@@ -446,13 +446,20 @@ export default function Analytics() {
                           <div>
                             <p className="font-medium truncate">{p.produto}</p>
                             <p className="text-xs text-muted-foreground">
-                              📦 {p.vendas} pedidos · R$ {p.receita.toFixed(2)} receita · Custo: R$ {p.custo.toFixed(2)}
+                              📦 {p.vendas} pedidos · R$ {p.receita.toFixed(2)} receita
+                              {p.custo > 0 ? ` · Custo: R$ ${p.custo.toFixed(2)}` : ''}
                             </p>
                           </div>
                         </div>
                         <div className="text-right ml-3">
-                          <p className="font-bold text-destructive">R$ {p.lucro.toFixed(2)}</p>
-                          <p className="text-xs text-muted-foreground">Margem: {p.margem.toFixed(1)}%</p>
+                          {p.custo > 0 ? (
+                            <>
+                              <p className="font-bold text-destructive">R$ {p.lucro.toFixed(2)}</p>
+                              <p className="text-xs text-muted-foreground">Margem: {p.margem.toFixed(1)}%</p>
+                            </>
+                          ) : (
+                            <p className="text-xs text-orange-500 font-medium">⚠️ Sem custo</p>
+                          )}
                         </div>
                       </div>
                     ))}
