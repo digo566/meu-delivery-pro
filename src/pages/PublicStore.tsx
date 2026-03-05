@@ -84,11 +84,11 @@ const PublicStore = () => {
     
     if (savedCartId && savedTimestamp) {
       const lastActivity = parseInt(savedTimestamp);
-      const tenMinutes = 10 * 60 * 1000; // 10 minutos em ms
+      const fifteenMinutes = 15 * 60 * 1000; // 15 minutos em ms
       const now = Date.now();
       
-      // Verificar se passaram 10 minutos
-      if (now - lastActivity > tenMinutes) {
+      // Verificar se passaram 15 minutos
+      if (now - lastActivity > fifteenMinutes) {
         // Expirou - limpar tudo
         localStorage.removeItem(`cartItems_${savedCartId}`);
         localStorage.removeItem(`guestCart_${restaurantId}`);

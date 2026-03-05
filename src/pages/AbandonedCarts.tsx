@@ -28,6 +28,7 @@ interface AbandonedCart {
 export default function AbandonedCarts() {
   const [carts, setCarts] = useState<AbandonedCart[]>([]);
   const [loading, setLoading] = useState(true);
+  const [restaurantName, setRestaurantName] = useState("");
 
   useEffect(() => {
     loadAbandonedCarts();
@@ -57,6 +58,14 @@ export default function AbandonedCarts() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Load restaurant name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("restaurant_name")
+        .eq("id", user.id)
+        .single();
+      if (profile) setRestaurantName(profile.restaurant_name);
+
       const { data, error } = await supabase
         .from("carts")
         .select(`
@@ -78,14 +87,14 @@ export default function AbandonedCarts() {
     }
   };
 
-  const handleContact = async (cart: AbandonedCart) => {
+  const handleContact = async (cart: AbandonedCart, restaurantName: string) => {
     try {
       const items = cart.cart_items
         .map((item) => `${item.quantity}x ${item.products.name}`)
         .join(", ");
       
       const message = encodeURIComponent(
-        `Olá ${cart.clients.name}! Vimos que você adicionou alguns itens ao carrinho (${items}) mas não finalizou o pedido. Posso ajudar com algo?`
+        `Olá ${cart.clients.name}, vi que você esqueceu alguns itens no carrinho da ${restaurantName}. Posso te oferecer um mimo para você finalizar agora? 🍔`
       );
       
       const phone = cart.clients.phone.replace(/\D/g, "");
@@ -186,12 +195,12 @@ export default function AbandonedCarts() {
                   </div>
 
                   <Button
-                    onClick={() => handleContact(cart)}
-                    className="w-full"
+                    onClick={() => handleContact(cart, restaurantName)}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
                     disabled={cart.contacted}
                   >
                     <MessageSquare className="h-4 w-4 mr-2" />
-                    {cart.contacted ? "Cliente já Contatado" : "Entrar em Contato via WhatsApp"}
+                    {cart.contacted ? "Cliente já Contatado" : "📱 Recuperar via WhatsApp"}
                   </Button>
                 </CardContent>
               </Card>
