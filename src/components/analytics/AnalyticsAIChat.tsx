@@ -139,7 +139,9 @@ export function AnalyticsAIChat({ analyticsData }: AnalyticsAIChatProps) {
                       : "bg-muted/50"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <div className="text-sm whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
                 </div>
                 {msg.role === "user" && (
                   <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">

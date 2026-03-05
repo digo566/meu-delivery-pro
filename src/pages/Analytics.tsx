@@ -393,6 +393,12 @@ export default function Analytics() {
                 <BottomProductsChart data={data?.produtos_menos_vendidos || []} />
               </Card>
             </div>
+
+            {/* BCG Matrix & Delivery Heatmap */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <BCGMatrixChart />
+              <DeliveryHeatmap />
+            </div>
           </>
         )}
       </div>

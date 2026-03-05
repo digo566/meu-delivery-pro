@@ -103,7 +103,9 @@ export function FinancialAIChat() {
                         : "bg-muted"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <div className="text-sm whitespace-pre-wrap prose prose-sm dark:prose-invert max-w-none">
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
+                    </div>
                   </div>
                   {message.role === "user" && (
                     <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
