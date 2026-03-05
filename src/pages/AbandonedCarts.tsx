@@ -58,6 +58,14 @@ export default function AbandonedCarts() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Load restaurant name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("restaurant_name")
+        .eq("id", user.id)
+        .single();
+      if (profile) setRestaurantName(profile.restaurant_name);
+
       const { data, error } = await supabase
         .from("carts")
         .select(`
