@@ -16,6 +16,8 @@ import { PredictionsPanel } from "@/components/analytics/PredictionsPanel";
 import { FeedbackDialog } from "@/components/analytics/FeedbackDialog";
 import { AlertsNotification } from "@/components/analytics/AlertsNotification";
 import { AnalyticsAIChat } from "@/components/analytics/AnalyticsAIChat";
+import { DeliveryHeatmap } from "@/components/analytics/DeliveryHeatmap";
+import { BCGMatrixChart } from "@/components/analytics/BCGMatrixChart";
 
 
 import { useAnalyticsData } from "@/hooks/useAnalyticsData";
