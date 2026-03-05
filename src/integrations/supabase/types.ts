@@ -1066,6 +1066,18 @@ export type Database = {
         Returns: boolean
       }
       generate_tracking_code: { Args: never; Returns: string }
+      get_my_subscription: {
+        Args: never
+        Returns: {
+          billing_type: string
+          created_at: string
+          cycle: string
+          id: string
+          next_due_date: string
+          status: string
+          value: number
+        }[]
+      }
       get_public_products: {
         Args: { restaurant_id_param: string }
         Returns: {
