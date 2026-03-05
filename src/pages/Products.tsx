@@ -26,6 +26,8 @@ interface Product {
   name: string;
   description: string;
   price: number;
+  cost_price: number | null;
+  profit_margin: number | null;
   image_url: string;
   available: boolean;
   category_id: string | null;
