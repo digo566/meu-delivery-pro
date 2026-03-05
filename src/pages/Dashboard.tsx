@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DollarSign, Package, ShoppingBag, TrendingUp, ExternalLink, Copy } from "lucide-react";
+import { DollarSign, Package, ShoppingBag, TrendingUp, ExternalLink, Copy, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -13,6 +13,9 @@ interface DashboardStats {
   totalRevenue: number;
   averageTicket: number;
   topProduct: string;
+  estimatedProfit: number;
+  totalCosts: number;
+  starProducts: Array<{ name: string; margin: number; revenue: number }>;
 }
 
 const Dashboard = () => {
@@ -21,6 +24,9 @@ const Dashboard = () => {
     totalRevenue: 0,
     averageTicket: 0,
     topProduct: "N/A",
+    estimatedProfit: 0,
+    totalCosts: 0,
+    starProducts: [],
   });
   const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,8 +52,9 @@ const Dashboard = () => {
 
       const { data: allOrders, error: statsError } = await supabase
         .from("orders")
-        .select("total_amount")
-        .eq("restaurant_id", user.id);
+        .select("total_amount, order_items(quantity, unit_price, product:products(name, cost_price, price, profit_margin))")
+        .eq("restaurant_id", user.id)
+        .neq("status", "cancelled");
 
       if (statsError) throw statsError;
 
@@ -64,11 +71,47 @@ const Dashboard = () => {
       const totalRevenue = allOrders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
       const averageTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
+      // Calculate costs and profit
+      let totalCosts = 0;
+      const productPerf: Record<string, { revenue: number; cost: number; margin: number }> = {};
+      
+      allOrders?.forEach((order: any) => {
+        order.order_items?.forEach((item: any) => {
+          const costPrice = item.product?.cost_price || 0;
+          const sellPrice = item.unit_price || item.product?.price || 0;
+          const qty = item.quantity || 1;
+          totalCosts += costPrice * qty;
+          
+          const name = item.product?.name || "Desconhecido";
+          if (!productPerf[name]) productPerf[name] = { revenue: 0, cost: 0, margin: 0 };
+          productPerf[name].revenue += sellPrice * qty;
+          productPerf[name].cost += costPrice * qty;
+        });
+      });
+
+      const estimatedProfit = totalRevenue - totalCosts;
+      
+      const starProducts = Object.entries(productPerf)
+        .map(([name, d]) => ({
+          name,
+          revenue: d.revenue,
+          margin: d.revenue > 0 ? ((d.revenue - d.cost) / d.revenue) * 100 : 0,
+        }))
+        .filter(p => p.margin >= 50)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 5);
+
+      // Find top product
+      const topProductEntry = Object.entries(productPerf).sort((a, b) => b[1].revenue - a[1].revenue)[0];
+
       setStats({
         totalOrders,
         totalRevenue,
         averageTicket,
-        topProduct: "N/A",
+        topProduct: topProductEntry ? topProductEntry[0] : "N/A",
+        estimatedProfit,
+        totalCosts,
+        starProducts,
       });
 
       setRecentOrders(orders || []);
@@ -136,7 +179,7 @@ const Dashboard = () => {
         </Card>
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
@@ -149,7 +192,7 @@ const Dashboard = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Receita Total</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Faturamento Bruto</CardTitle>
               <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
@@ -159,10 +202,27 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
+          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-background">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Lucro Líquido Est.</CardTitle>
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-semibold ${stats.estimatedProfit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                R$ {stats.estimatedProfit.toFixed(2)}
+              </div>
+              {stats.totalRevenue > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Margem: {((stats.estimatedProfit / stats.totalRevenue) * 100).toFixed(1)}%
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Médio</CardTitle>
-              <TrendingUp className="h-4 w-4 text-primary" />
+              <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-semibold">
@@ -177,10 +237,38 @@ const Dashboard = () => {
               <Package className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold">{stats.topProduct}</div>
+              <div className="text-lg font-semibold truncate">{stats.topProduct}</div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Star Products */}
+        {stats.starProducts.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Star className="w-4 h-4 text-yellow-500" />
+                Produtos Estrela (Margem ≥ 50%)
+              </CardTitle>
+              <CardDescription>Seus produtos mais lucrativos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {stats.starProducts.map((p, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-md bg-yellow-500/5 border border-yellow-500/20">
+                    <div>
+                      <p className="font-medium text-sm">{p.name} ⭐</p>
+                      <p className="text-xs text-muted-foreground">R$ {p.revenue.toFixed(2)} em vendas</p>
+                    </div>
+                    <Badge variant="outline" className="text-green-600 border-green-600/30">
+                      {p.margin.toFixed(0)}%
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Recent Orders */}
         <Card>

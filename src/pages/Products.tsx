@@ -26,6 +26,8 @@ interface Product {
   name: string;
   description: string;
   price: number;
+  cost_price: number | null;
+  profit_margin: number | null;
   image_url: string;
   available: boolean;
   category_id: string | null;
@@ -105,6 +107,10 @@ const Products = () => {
             name: formData.name,
             description: formData.description,
             price: parseFloat(formData.price),
+            cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null,
+            profit_margin: formData.cost_price && formData.price
+              ? ((parseFloat(formData.price) - parseFloat(formData.cost_price)) / parseFloat(formData.price)) * 100
+              : null,
             image_url: formData.image_url,
             available: formData.available,
             category_id: formData.category_id || null,
@@ -119,6 +125,10 @@ const Products = () => {
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
+          cost_price: formData.cost_price ? parseFloat(formData.cost_price) : null,
+          profit_margin: formData.cost_price && formData.price
+            ? ((parseFloat(formData.price) - parseFloat(formData.cost_price)) / parseFloat(formData.price)) * 100
+            : null,
           image_url: formData.image_url,
           available: formData.available,
           category_id: formData.category_id || null,
@@ -156,7 +166,7 @@ const Products = () => {
         name: product.name,
         description: product.description || "",
         price: product.price.toString(),
-        cost_price: "",
+        cost_price: product.cost_price?.toString() || "",
         image_url: product.image_url || "",
         available: product.available,
         category_id: product.category_id || "",
@@ -257,7 +267,7 @@ const Products = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="price">Preço (R$)</Label>
+                    <Label htmlFor="price">Preço de Venda (R$)</Label>
                     <Input
                       id="price"
                       type="number"
@@ -268,16 +278,37 @@ const Products = () => {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="cost_price">Custo (R$)</Label>
+                    <Label htmlFor="cost_price">Custo de Produção (R$)</Label>
                     <Input
                       id="cost_price"
                       type="number"
                       step="0.01"
+                      placeholder="Insumos"
                       value={formData.cost_price}
                       onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
                     />
                   </div>
                 </div>
+                {formData.price && formData.cost_price && parseFloat(formData.price) > 0 && (
+                  <div className="p-3 bg-muted rounded-lg space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Margem de Contribuição:</span>
+                      <span className="font-semibold text-primary">
+                        R$ {(parseFloat(formData.price) - parseFloat(formData.cost_price)).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Margem (%):</span>
+                      <span className={`font-semibold ${
+                        ((parseFloat(formData.price) - parseFloat(formData.cost_price)) / parseFloat(formData.price)) * 100 >= 30
+                          ? 'text-green-600'
+                          : 'text-orange-600'
+                      }`}>
+                        {(((parseFloat(formData.price) - parseFloat(formData.cost_price)) / parseFloat(formData.price)) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                )}
                 <div className="grid gap-2">
                   <Label>Imagem do Produto</Label>
                   <ImageUpload
@@ -371,7 +402,7 @@ const Products = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-2">
                     <p className="text-2xl font-bold text-primary">
                       R$ {product.price.toFixed(2)}
                     </p>
@@ -394,6 +425,19 @@ const Products = () => {
                       </Button>
                     </div>
                   </div>
+                  {product.cost_price != null && product.cost_price > 0 && (
+                    <div className="flex items-center gap-2 mb-4 text-sm">
+                      <span className="text-muted-foreground">Margem:</span>
+                      <span className={`font-semibold ${
+                        product.profit_margin && product.profit_margin >= 30 ? 'text-green-600' : 'text-orange-600'
+                      }`}>
+                        {product.profit_margin?.toFixed(1)}%
+                      </span>
+                      {product.profit_margin && product.profit_margin >= 50 && (
+                        <span title="Produto Estrela - Alta Margem">⭐</span>
+                      )}
+                    </div>
+                  )}
                   <ProductOptionsManager
                     productId={product.id}
                     productName={product.name}

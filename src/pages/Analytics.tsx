@@ -16,6 +16,8 @@ import { PredictionsPanel } from "@/components/analytics/PredictionsPanel";
 import { FeedbackDialog } from "@/components/analytics/FeedbackDialog";
 import { AlertsNotification } from "@/components/analytics/AlertsNotification";
 import { AnalyticsAIChat } from "@/components/analytics/AnalyticsAIChat";
+import { DeliveryHeatmap } from "@/components/analytics/DeliveryHeatmap";
+import { BCGMatrixChart } from "@/components/analytics/BCGMatrixChart";
 
 
 import { useAnalyticsData } from "@/hooks/useAnalyticsData";
@@ -390,6 +392,12 @@ export default function Analytics() {
                 </h3>
                 <BottomProductsChart data={data?.produtos_menos_vendidos || []} />
               </Card>
+            </div>
+
+            {/* BCG Matrix & Delivery Heatmap */}
+            <div className="grid gap-6 lg:grid-cols-2">
+              <BCGMatrixChart />
+              <DeliveryHeatmap />
             </div>
           </>
         )}
