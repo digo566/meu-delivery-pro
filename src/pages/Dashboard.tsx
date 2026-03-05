@@ -179,7 +179,7 @@ const Dashboard = () => {
         </Card>
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total de Pedidos</CardTitle>
@@ -192,7 +192,7 @@ const Dashboard = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Receita Total</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Faturamento Bruto</CardTitle>
               <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
@@ -202,10 +202,27 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
+          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-background">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Lucro Líquido Est.</CardTitle>
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-semibold ${stats.estimatedProfit >= 0 ? 'text-green-600' : 'text-destructive'}`}>
+                R$ {stats.estimatedProfit.toFixed(2)}
+              </div>
+              {stats.totalRevenue > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Margem: {((stats.estimatedProfit / stats.totalRevenue) * 100).toFixed(1)}%
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Médio</CardTitle>
-              <TrendingUp className="h-4 w-4 text-primary" />
+              <DollarSign className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-semibold">
@@ -220,10 +237,38 @@ const Dashboard = () => {
               <Package className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-semibold">{stats.topProduct}</div>
+              <div className="text-lg font-semibold truncate">{stats.topProduct}</div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Star Products */}
+        {stats.starProducts.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Star className="w-4 h-4 text-yellow-500" />
+                Produtos Estrela (Margem ≥ 50%)
+              </CardTitle>
+              <CardDescription>Seus produtos mais lucrativos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {stats.starProducts.map((p, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 rounded-md bg-yellow-500/5 border border-yellow-500/20">
+                    <div>
+                      <p className="font-medium text-sm">{p.name} ⭐</p>
+                      <p className="text-xs text-muted-foreground">R$ {p.revenue.toFixed(2)} em vendas</p>
+                    </div>
+                    <Badge variant="outline" className="text-green-600 border-green-600/30">
+                      {p.margin.toFixed(0)}%
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Recent Orders */}
         <Card>
