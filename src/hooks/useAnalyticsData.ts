@@ -2,6 +2,15 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfDay, endOfDay, eachDayOfInterval, format } from "date-fns";
 
+export interface ProductProfitability {
+  produto: string;
+  vendas: number;
+  receita: number;
+  custo: number;
+  lucro: number;
+  margem: number;
+}
+
 export interface AnalyticsData {
   pedidos_total: number;
   pedidos_por_dia: number[];
@@ -10,6 +19,8 @@ export interface AnalyticsData {
   abandonos: number;
   produtos_mais_vendidos: Array<{ produto: string; vendas: number }>;
   produtos_menos_vendidos: Array<{ produto: string; vendas: number }>;
+  produtos_mais_lucrativos: ProductProfitability[];
+  produtos_menos_lucrativos: ProductProfitability[];
   periodo: {
     de: string;
     ate: string;
