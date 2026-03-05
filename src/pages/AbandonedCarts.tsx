@@ -28,6 +28,7 @@ interface AbandonedCart {
 export default function AbandonedCarts() {
   const [carts, setCarts] = useState<AbandonedCart[]>([]);
   const [loading, setLoading] = useState(true);
+  const [restaurantName, setRestaurantName] = useState("");
 
   useEffect(() => {
     loadAbandonedCarts();
