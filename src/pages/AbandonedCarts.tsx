@@ -78,14 +78,14 @@ export default function AbandonedCarts() {
     }
   };
 
-  const handleContact = async (cart: AbandonedCart) => {
+  const handleContact = async (cart: AbandonedCart, restaurantName: string) => {
     try {
       const items = cart.cart_items
         .map((item) => `${item.quantity}x ${item.products.name}`)
         .join(", ");
       
       const message = encodeURIComponent(
-        `Olá ${cart.clients.name}! Vimos que você adicionou alguns itens ao carrinho (${items}) mas não finalizou o pedido. Posso ajudar com algo?`
+        `Olá ${cart.clients.name}, vi que você esqueceu alguns itens no carrinho da ${restaurantName}. Posso te oferecer um mimo para você finalizar agora? 🍔`
       );
       
       const phone = cart.clients.phone.replace(/\D/g, "");
