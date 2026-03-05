@@ -133,23 +133,31 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
           vendas: d.vendas,
           receita: d.receita,
           custo: d.custo,
-          lucro: d.receita - d.custo,
-          margem: d.receita > 0 && d.custo > 0 ? ((d.receita - d.custo) / d.receita) * 100 : 0,
+          lucro: d.custo > 0 ? d.receita - d.custo : d.receita,
+          margem: d.receita > 0 && d.custo > 0 ? ((d.receita - d.custo) / d.receita) * 100 : -1,
         }));
 
-      console.log("[Analytics] Product cost map:", productCostMap);
-      console.log("[Analytics] Profitability list:", profitabilityList);
-
-      // Most profitable: sort by total profit (revenue - cost), weighted by volume
+      // Most profitable: products with cost get real margin, others sorted by revenue
       const produtos_mais_lucrativos = [...profitabilityList]
-        .filter(p => p.custo > 0)
-        .sort((a, b) => b.lucro - a.lucro || b.vendas - a.vendas)
+        .sort((a, b) => {
+          // Products with cost data come first
+          if (a.custo > 0 && b.custo <= 0) return -1;
+          if (a.custo <= 0 && b.custo > 0) return 1;
+          // Both have cost: sort by profit
+          if (a.custo > 0 && b.custo > 0) return b.lucro - a.lucro || b.vendas - a.vendas;
+          // Neither has cost: sort by revenue
+          return b.receita - a.receita;
+        })
         .slice(0, 5);
 
-      // Least profitable: sort by margin ASC (lowest margin first), then by volume DESC (high volume + low margin = biggest problem)
+      // Least profitable: lowest margin first (only makes sense with cost data), then by volume
       const produtos_menos_lucrativos = [...profitabilityList]
-        .filter(p => p.custo > 0)
-        .sort((a, b) => a.margem - b.margem || b.vendas - a.vendas)
+        .sort((a, b) => {
+          if (a.custo > 0 && b.custo <= 0) return -1;
+          if (a.custo <= 0 && b.custo > 0) return 1;
+          if (a.custo > 0 && b.custo > 0) return a.margem - b.margem || b.vendas - a.vendas;
+          return b.receita - a.receita;
+        })
         .slice(0, 5);
 
       setData({
