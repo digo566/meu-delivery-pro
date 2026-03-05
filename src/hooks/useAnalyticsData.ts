@@ -43,7 +43,7 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
       // Fetch orders within date range
       const { data: orders } = await supabase
         .from("orders")
-        .select("*, order_items(*, product:products(name))")
+        .select("*, order_items(*, product:products(name, price, cost_price))")
         .eq("restaurant_id", user.id)
         .gte("created_at", from.toISOString())
         .lte("created_at", to.toISOString());
