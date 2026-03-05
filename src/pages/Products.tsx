@@ -166,7 +166,7 @@ const Products = () => {
         name: product.name,
         description: product.description || "",
         price: product.price.toString(),
-        cost_price: "",
+        cost_price: product.cost_price?.toString() || "",
         image_url: product.image_url || "",
         available: product.available,
         category_id: product.category_id || "",
