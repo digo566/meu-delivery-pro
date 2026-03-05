@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAnalyticsAI } from "@/hooks/useAnalyticsAI";
+import ReactMarkdown from "react-markdown";
 import { 
   Send, 
   Bot, 
