@@ -103,11 +103,6 @@ const Products = () => {
       if (editingProduct) {
         const costPrice = formData.cost_price ? parseFloat(formData.cost_price) : 0;
         const price = parseFloat(formData.price);
-        const profitMargin = costPrice > 0 && price > 0
-          ? ((price - costPrice) / price) * 100
-          : null;
-
-        console.log("[Products] Saving cost_price:", costPrice, "profit_margin:", profitMargin);
 
         const { error } = await supabase
           .from("products")
@@ -116,7 +111,6 @@ const Products = () => {
             description: formData.description,
             price,
             cost_price: costPrice,
-            profit_margin: profitMargin,
             image_url: formData.image_url,
             available: formData.available,
             category_id: formData.category_id || null,
