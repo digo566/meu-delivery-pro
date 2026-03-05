@@ -111,21 +111,29 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
       const produtos_mais_vendidos = sortedProducts.slice(0, 5);
       const produtos_menos_vendidos = sortedProducts.slice(-5).reverse();
 
-      // Profitability ranking (only products with cost_price > 0)
+      // Profitability ranking - include ALL products with sales
+      // Products without cost_price show margin as 0 to encourage filling it in
       const profitabilityList: ProductProfitability[] = Object.entries(productProfit)
-        .filter(([_, d]) => d.custo > 0)
         .map(([produto, d]) => ({
           produto,
           vendas: d.vendas,
           receita: d.receita,
           custo: d.custo,
           lucro: d.receita - d.custo,
-          margem: d.receita > 0 ? ((d.receita - d.custo) / d.receita) * 100 : 0,
-        }))
-        .sort((a, b) => b.lucro - a.lucro);
+          margem: d.receita > 0 && d.custo > 0 ? ((d.receita - d.custo) / d.receita) * 100 : 0,
+        }));
 
-      const produtos_mais_lucrativos = profitabilityList.slice(0, 5);
-      const produtos_menos_lucrativos = [...profitabilityList].sort((a, b) => a.margem - b.margem).slice(0, 5);
+      // Most profitable: sort by total profit (revenue - cost), weighted by volume
+      const produtos_mais_lucrativos = [...profitabilityList]
+        .filter(p => p.custo > 0)
+        .sort((a, b) => b.lucro - a.lucro || b.vendas - a.vendas)
+        .slice(0, 5);
+
+      // Least profitable: sort by margin ASC (lowest margin first), then by volume DESC (high volume + low margin = biggest problem)
+      const produtos_menos_lucrativos = [...profitabilityList]
+        .filter(p => p.custo > 0)
+        .sort((a, b) => a.margem - b.margem || b.vendas - a.vendas)
+        .slice(0, 5);
 
       setData({
         pedidos_total,
