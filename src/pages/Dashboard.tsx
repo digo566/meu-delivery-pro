@@ -52,8 +52,9 @@ const Dashboard = () => {
 
       const { data: allOrders, error: statsError } = await supabase
         .from("orders")
-        .select("total_amount")
-        .eq("restaurant_id", user.id);
+        .select("total_amount, order_items(quantity, unit_price, product:products(name, cost_price, price, profit_margin))")
+        .eq("restaurant_id", user.id)
+        .neq("status", "cancelled");
 
       if (statsError) throw statsError;
 
@@ -70,11 +71,47 @@ const Dashboard = () => {
       const totalRevenue = allOrders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0;
       const averageTicket = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
+      // Calculate costs and profit
+      let totalCosts = 0;
+      const productPerf: Record<string, { revenue: number; cost: number; margin: number }> = {};
+      
+      allOrders?.forEach((order: any) => {
+        order.order_items?.forEach((item: any) => {
+          const costPrice = item.product?.cost_price || 0;
+          const sellPrice = item.unit_price || item.product?.price || 0;
+          const qty = item.quantity || 1;
+          totalCosts += costPrice * qty;
+          
+          const name = item.product?.name || "Desconhecido";
+          if (!productPerf[name]) productPerf[name] = { revenue: 0, cost: 0, margin: 0 };
+          productPerf[name].revenue += sellPrice * qty;
+          productPerf[name].cost += costPrice * qty;
+        });
+      });
+
+      const estimatedProfit = totalRevenue - totalCosts;
+      
+      const starProducts = Object.entries(productPerf)
+        .map(([name, d]) => ({
+          name,
+          revenue: d.revenue,
+          margin: d.revenue > 0 ? ((d.revenue - d.cost) / d.revenue) * 100 : 0,
+        }))
+        .filter(p => p.margin >= 50)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 5);
+
+      // Find top product
+      const topProductEntry = Object.entries(productPerf).sort((a, b) => b[1].revenue - a[1].revenue)[0];
+
       setStats({
         totalOrders,
         totalRevenue,
         averageTicket,
-        topProduct: "N/A",
+        topProduct: topProductEntry ? topProductEntry[0] : "N/A",
+        estimatedProfit,
+        totalCosts,
+        starProducts,
       });
 
       setRecentOrders(orders || []);
