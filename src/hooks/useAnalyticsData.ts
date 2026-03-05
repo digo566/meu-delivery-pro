@@ -127,7 +127,6 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
       const produtos_menos_vendidos = sortedProducts.slice(-5).reverse();
 
       // Profitability ranking - include ALL products with sales
-      // Products without cost_price show margin as 0 to encourage filling it in
       const profitabilityList: ProductProfitability[] = Object.entries(productProfit)
         .map(([produto, d]) => ({
           produto,
@@ -137,6 +136,9 @@ export function useAnalyticsData(dateFrom?: Date, dateTo?: Date) {
           lucro: d.receita - d.custo,
           margem: d.receita > 0 && d.custo > 0 ? ((d.receita - d.custo) / d.receita) * 100 : 0,
         }));
+
+      console.log("[Analytics] Product cost map:", productCostMap);
+      console.log("[Analytics] Profitability list:", profitabilityList);
 
       // Most profitable: sort by total profit (revenue - cost), weighted by volume
       const produtos_mais_lucrativos = [...profitabilityList]
